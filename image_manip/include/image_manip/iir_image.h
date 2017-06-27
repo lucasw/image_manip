@@ -46,6 +46,8 @@ class IIRImage : public nodelet::Nodelet
   // image_transport::ImageTransport it_;
   ros::Publisher pub_;
   ros::Subscriber sub_;
+  // TODO(lucasw) should this be ImageTransport- is it faster?
+  std::vector<ros::Subscriber> image_subs_;
 
   image_manip::IIRImageConfig config_;
   typedef dynamic_reconfigure::Server<image_manip::IIRImageConfig> ReconfigureServer;
@@ -55,6 +57,7 @@ class IIRImage : public nodelet::Nodelet
 
   boost::recursive_mutex dr_mutex_;
 
+  bool use_time_sequence_;
   std::vector<double> b_coeffs_;
   // so far just a fir
   // std::vector<cv::Mat> a_coeffs;
@@ -68,6 +71,7 @@ class IIRImage : public nodelet::Nodelet
   bool dirty_;
 
   void imageCallback(const sensor_msgs::ImageConstPtr& msg);
+  void imagesCallback(const sensor_msgs::ImageConstPtr& msg, const size_t index);
 
 public:
   virtual void onInit();

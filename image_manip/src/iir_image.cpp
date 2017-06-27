@@ -52,7 +52,8 @@ void IIRImage::callback(
 {
   config_ = config;
 
-  b_coeffs_.resize(8);
+  if (use_time_sequence_)
+    b_coeffs_.resize(8);
   if (b_coeffs_.size() > 0)
     b_coeffs_[0] = config_.b0;
   if (b_coeffs_.size() > 1)
@@ -128,6 +129,29 @@ void IIRImage::imageCallback(const sensor_msgs::ImageConstPtr& msg)
   dirty_ = true;
 }
 
+void IIRImage::imagesCallback(const sensor_msgs::ImageConstPtr& msg, const size_t index)
+{
+  if (index >= in_frames_.size())
+    return;
+
+  cv_bridge::CvImageConstPtr cv_ptr;
+  try
+  {
+    // TBD why converting to BGR8
+    cv_ptr = cv_bridge::toCvShare(msg, sensor_msgs::image_encodings::RGB8);
+    //, "mono8"); // sensor_msgs::image_encodings::MONO8);
+  }
+  catch (cv_bridge::Exception& e)
+  {
+    ROS_ERROR("cv_bridge exception: %s", e.what());
+    return;
+  }
+
+  in_frames_[index] = cv_ptr->image.clone();
+
+  dirty_ = true;
+}
+
 void IIRImage::onInit()
 {
   pub_ = getNodeHandle().advertise<sensor_msgs::Image>("image", 5);
@@ -137,17 +161,34 @@ void IIRImage::onInit()
       boost::bind(&IIRImage::callback, this, _1, _2);
   server_->setCallback(cbt);
 
-#if 0
-  // TODO(lucasw) update config from b_coeffs
-  getPrivateNodeHandle().getParam("~b_coeffs", b_coeffs_);
-  if (b_coeffs_.size() == 0)
-  {
-    ROS_WARN_STREAM("no b coefficients");
-  }
-  getPrivateNodeHandle().getParam("~a_coeffs", a_coeffs_);
-#endif
+  getPrivateNodeHandle().getParam("~use_time_sequence", use_time_sequence_);
 
-  sub_ = getNodeHandle().subscribe("image_in", 1, &IIRImage::imageCallback, this);
+  if (use_time_sequence_)
+  {
+    // TODO(lucasw) update config from b_coeffs
+    getPrivateNodeHandle().getParam("~b_coeffs", b_coeffs_);
+    if (b_coeffs_.size() == 0)
+    {
+      ROS_WARN_STREAM("no b coefficients");
+    }
+    in_frames_.resize(b_coeffs_.size());
+
+    for (size_t i = 0; i < b_coeffs_.size(); ++i)
+    {
+      std::stringstream ss;
+      ss << "image_" << i;
+      ROS_INFO_STREAM("subscribe " << ss.str() << " " << b_coeffs_[i]);
+      image_subs_.push_back(getNodeHandle().subscribe<sensor_msgs::Image>(
+          ss.str(), 1,
+          // &IIRImage::imageCallback, this));
+          boost::bind(&IIRImage::imagesCallback, this, _1, i)));
+    }
+  }
+  // getPrivateNodeHandle().getParam("~a_coeffs", a_coeffs_);
+  else
+  {
+    sub_ = getNodeHandle().subscribe("image_in", 1, &IIRImage::imageCallback, this);
+  }
 
   // TODO(lucasw) move to update function
   const float period = 1.0 / config_.frame_rate;
