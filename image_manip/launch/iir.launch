@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="device" default="0"/>
+  <arg name="width" default="640"/>
+  <arg name="height" default="480"/>
+  <arg name="frame_rate" default="5"/>
+
+  <!--node name="color" pkg="vimjay" type="color">
+    <param name="width" value="$(arg width)"/>
+    <param name="height" value="$(arg height)"/>
+    <param name="red" value="244"/>
+    <param name="green" value="244"/>
+    <param name="blue" value="244"/>
+  </node-->
+
+  <node name="usb_cam" pkg="usb_cam" type="usb_cam_node"
+      output="screen">
+    <param name="image_width" value="$(arg width)"/>
+    <param name="image_height" value="$(arg height)"/>
+    <param name="framerate" value="$(arg frame_rate)"/>
+    <param name="video_device" value="/dev/video$(arg device)" />
+    <!--param name="pixel_format" value="mjpeg" /-->
+    <param name="pixel_format" value="yuyv"/>
+  </node>
+
+  <group ns="usb_cam">
+    <node name="iir_image" pkg="image_manip" type="iir_image_node"
+        output="screen">
+      <remap from="image" to="image_raw"/>
+    </node>
+
+    <group ns="image_raw">
+    <!-- http://answers.ros.org/question/255970/how-to-deactivate-image_transport-plugins/ -->
+    <rosparam param="disable_pub_plugins">
+      - 'image_transport/compressed'
+      - 'image_transport/compressedDepth'
+      - 'image_transport/theora'
+    </rosparam>
+    </group>
+  </group>
+
+</launch>
