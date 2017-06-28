@@ -38,6 +38,7 @@ namespace image_manip
 {
 
 IIRImage::IIRImage() :
+  use_time_sequence_(true),
   dirty_(false)
 {
 }
@@ -154,7 +155,10 @@ void IIRImage::imagesCallback(const sensor_msgs::ImageConstPtr& msg, const size_
 
 void IIRImage::onInit()
 {
-  pub_ = getNodeHandle().advertise<sensor_msgs::Image>("image", 5);
+  dirty_ = false;
+  use_time_sequence_ = true;
+
+  pub_ = getNodeHandle().advertise<sensor_msgs::Image>("image_out", 5);
 
   server_.reset(new ReconfigureServer(dr_mutex_, getPrivateNodeHandle()));
   dynamic_reconfigure::Server<image_manip::IIRImageConfig>::CallbackType cbt =
@@ -163,7 +167,7 @@ void IIRImage::onInit()
 
   getPrivateNodeHandle().getParam("~use_time_sequence", use_time_sequence_);
 
-  if (use_time_sequence_)
+  if (!use_time_sequence_)
   {
     // TODO(lucasw) update config from b_coeffs
     getPrivateNodeHandle().getParam("~b_coeffs", b_coeffs_);
@@ -180,7 +184,6 @@ void IIRImage::onInit()
       ROS_INFO_STREAM("subscribe " << ss.str() << " " << b_coeffs_[i]);
       image_subs_.push_back(getNodeHandle().subscribe<sensor_msgs::Image>(
           ss.str(), 1,
-          // &IIRImage::imageCallback, this));
           boost::bind(&IIRImage::imagesCallback, this, _1, i)));
     }
   }
