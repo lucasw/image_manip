@@ -27,7 +27,18 @@
   <group ns="usb_cam">
     <node name="iir_image" pkg="image_manip" type="iir_image_node"
         output="screen">
-      <remap from="image" to="image_raw"/>
+      <remap from="image_in" to="image_raw"/>
+      <remap from="image_out" to="image_iir"/>
+    </node>
+
+    <node name="combine_image" pkg="image_manip" type="iir_image_node"
+        output="screen">
+      <param name="use_time_sequence" value="false"/>
+      <rosparam param="b_coeffs">[0.5, 0.5, 0.1]</rosparam>
+      <remap from="image_0" to="image_raw"/>
+      <remap from="image_1" to="image_iir"/>
+      <remap from="image_2" to="image_combined"/>
+      <remap from="image_out" to="image_combined"/>
     </node>
 
     <group ns="image_raw">
@@ -39,5 +50,10 @@
     </rosparam>
     </group>
   </group>
+
+  <node name="rqt_generic" pkg="rqt_gui" type="rqt_gui" 
+      args="--lock-perspective --freeze-layout --hide-title --perspective-file $(find image_manip)/config/iir.perspective" 
+      output="screen">
+  </node>
 
 </launch>
