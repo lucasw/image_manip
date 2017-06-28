@@ -165,12 +165,12 @@ void IIRImage::onInit()
       boost::bind(&IIRImage::callback, this, _1, _2);
   server_->setCallback(cbt);
 
-  getPrivateNodeHandle().getParam("~use_time_sequence", use_time_sequence_);
+  getPrivateNodeHandle().getParam("use_time_sequence", use_time_sequence_);
 
   if (!use_time_sequence_)
   {
     // TODO(lucasw) update config from b_coeffs
-    getPrivateNodeHandle().getParam("~b_coeffs", b_coeffs_);
+    getPrivateNodeHandle().getParam("b_coeffs", b_coeffs_);
     if (b_coeffs_.size() == 0)
     {
       ROS_WARN_STREAM("no b coefficients");
@@ -186,8 +186,8 @@ void IIRImage::onInit()
           ss.str(), 1,
           boost::bind(&IIRImage::imagesCallback, this, _1, i)));
     }
+    // getPrivateNodeHandle().getParam("a_coeffs", a_coeffs_);
   }
-  // getPrivateNodeHandle().getParam("~a_coeffs", a_coeffs_);
   else
   {
     sub_ = getNodeHandle().subscribe("image_in", 1, &IIRImage::imageCallback, this);
