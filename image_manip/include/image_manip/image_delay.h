@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017 Lucas Walter
- * November 2017
+ * June 2017
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,17 +28,44 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <nodelet/loader.h>
-#include <ros/ros.h>
-#include <string>
+#ifndef IMAGE_MANIP_IMAGE_DELAY_H
+#define IMAGE_MANIP_IMAGE_DELAY_H
 
-int main(int argc, char** argv)
+#include <deque>
+#include <dynamic_reconfigure/server.h>
+// #include <image_manip/ImageDelayConfig.h>
+#include <nodelet/nodelet.h>
+#include <ros/ros.h>
+#include <vector>
+
+namespace image_manip
 {
-  ros::init(argc, argv, "iir_image");
-  nodelet::Loader nodelet;
-  nodelet::M_string remap(ros::names::getRemappings());
-  nodelet::V_string nargv;
-  std::string nodelet_name = ros::this_node::getName();
-  nodelet.load(nodelet_name, "image_manip/IIRImage", remap, nargv);
-  ros::spin();
-}
+
+class ImageDelay : public nodelet::Nodelet
+{
+  // image_transport::ImageTransport it_;
+  ros::Publisher pub_;
+  ros::Subscriber sub_;
+
+  #if 0
+  image_manip::ImageDelayConfig config_;
+  typedef dynamic_reconfigure::Server<image_manip::ImageDelayConfig> ReconfigureServer;
+  boost::shared_ptr< ReconfigureServer > server_;
+  void callback(image_manip::ImageDelayConfig& config,
+      uint32_t level);
+
+  boost::recursive_mutex dr_mutex_;
+  #endif
+
+  float delay_;
+  void imageCallback(const sensor_msgs::ImageConstPtr& msg);
+
+public:
+  virtual void onInit();
+  ImageDelay();
+  ~ImageDelay();
+};
+
+}  // namespace image_manip
+
+#endif  // IMAGE_MANIP_IIR_IMAGE_H

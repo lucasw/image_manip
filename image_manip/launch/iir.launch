@@ -91,8 +91,9 @@
       <remap from="image_0" to="load0/image_raw"/>
       <remap from="image_1" to="load1/image_raw"/>
       <remap from="image_2" to="load2/image_raw"/>
-      <remap from="image_3" to="image_combined"/>
-      <remap from="image_out" to="image_combined"/>
+      <remap from="image_3" to="delayed"/>
+      <remap from="image_out" to="combined"/>
+      <param name="frame_rate" value="4"/>
     </node>
     <group ns="image_raw">
     <!-- http://answers.ros.org/question/255970/how-to-deactivate-image_transport-plugins/ -->
@@ -102,6 +103,14 @@
       - 'image_transport/theora'
     </rosparam>
     </group>
+
+    <node name="delay" pkg="image_manip" type="image_delay_node"
+        output="screen">
+      <param name="delay" value="4.0"/>
+      <param name="queue_size" value="40"/>
+      <remap from="image_in" to="combined"/>
+      <remap from="image_out" to="delayed"/>
+    </node>
   </group>
 
   <!-- this is crashing currently

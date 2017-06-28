@@ -29,24 +29,21 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(iir_image
+add_library(image_manip
   src/iir_image.cpp
-)
-
-add_dependencies(iir_image ${PROJECT_NAME}_gencfg)
-
-target_link_libraries(iir_image
-  ${catkin_LIBRARIES}
-)
-
-add_executable(iir_image_node src/iir_image_node.cpp)
-target_link_libraries(iir_image_node
-  ${catkin_LIBRARIES}
-)
+  src/image_delay.cpp)
+add_dependencies(image_manip ${PROJECT_NAME}_gencfg)
+target_link_libraries(image_manip ${catkin_LIBRARIES})
 
 # TODO(lucasw) is this needed?
 if(catkin_EXPORTED_LIBRARIES)
-  add_dependencies(iir_image ${catkin_EXPORTED_LIBRARIES})
+  add_dependencies(image_manip ${catkin_EXPORTED_LIBRARIES})
 endif()
+
+add_executable(iir_image_node src/iir_image_node.cpp)
+target_link_libraries(iir_image_node ${catkin_LIBRARIES})
+
+add_executable(image_delay_node src/image_delay_node.cpp)
+target_link_libraries(image_delay_node ${catkin_LIBRARIES})
 
 # TODO(lucasw) install

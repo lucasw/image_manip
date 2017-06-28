@@ -1,0 +1,16 @@
+<library path="lib/libimage_manip">
+  <class name="image_manip/IIRImage"
+      type="image_manip::IIRImage"
+      base_class_type="nodelet::Nodelet">
+    <description>
+      Apply iir coefficients to a sequence of images
+    </description>
+  </class>
+  <class name="image_manip/ImageDelay"
+      type="image_manip::ImageDelay"
+      base_class_type="nodelet::Nodelet">
+    <description>
+      Republish an image after a specified delay
+    </description>
+  </class>
+</library>

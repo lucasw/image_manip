@@ -1,9 +1,0 @@
-<library path="lib/libiir_image">
-  <class name="image_manip/IIRImage"
-      type="image_manip::IIRImage"
-      base_class_type="nodelet::Nodelet">
-    <description>
-      Apply iir coefficients to a sequence of images
-    </description>
-  </class>
-</library>

@@ -29,7 +29,7 @@
   <run_depend>std_msgs</run_depend>
 
   <export>
-    <nodelet plugin="${prefix}/nodelet_iir_image.xml" />
+    <nodelet plugin="${prefix}/nodelet_image_manip.xml" />
   </export>
 
 </package>
