@@ -96,8 +96,8 @@ void RotoZoom::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 
   if (nrm_px)
   {
-    center.x *= wd;
-    center.y *= ht;
+    center.x = center.x * wd; //  + wd * 3 / 4;
+    center.y = center.y * ht; // + ht * 3 / 4;
     center.z *= ht;
 
     off_x *= wd;
@@ -169,7 +169,7 @@ void RotoZoom::imageCallback(const sensor_msgs::ImageConstPtr& msg)
   cv::Mat transform = cv::getPerspectiveTransform(in_roi, out_roi);
   cv::warpPerspective(cv_ptr->image, out, transform,
                       cv_ptr->image.size(),
-                      cv::INTER_NEAREST, cv::BORDER_REFLECT_101);
+                      cv::INTER_NEAREST, config_.border);
                       // getModeType(), getBorderType());
 
   cv_bridge::CvImage cv_image;
