@@ -81,16 +81,18 @@ void RotoZoom::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 
   float scale = 1.0;
 
-  const bool nrm_px = false;
+  const bool nrm_px = true;
 
   cv::Point3f center;
-  center.x = wd/2;
-  center.y = ht/2;
-  center.z = 0;
+  // TODO(lucasw) this doesn't work as expected
+  center.x = config_.center_x;
+  center.y = config_.center_y;
+  // TODO(lucasw) this has no effect
+  center.z = 1.0;  // config_.center_z;
 
-  float off_x = 0;
-  float off_y = 0;
-  float off_z = 0;
+  float off_x = config_.off_x;
+  float off_y = config_.off_y;
+  float off_z = config_.off_z;
 
   if (nrm_px)
   {
@@ -151,7 +153,8 @@ void RotoZoom::imageCallback(const sensor_msgs::ImageConstPtr& msg)
     out_roi = out_p(cv::Rect(0, 0, 2, 4)).clone();
 
     // this moves the image away from the 0 plane
-    const float z = 1.0;  // TODO(lucasw) config_
+    // TODO(lucasw) this has no effect
+    const float z = 1.0;  // config_.z;
     for (int i = 0; i < 4; i++)
     {
       for (int j = 0; j < 2; j++)
@@ -163,8 +166,6 @@ void RotoZoom::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 
   cv::Mat out;
   // TBD make inter_nearest changeable
-  ROS_INFO_STREAM(in_roi);
-  ROS_INFO_STREAM(out_roi);
   cv::Mat transform = cv::getPerspectiveTransform(in_roi, out_roi);
   cv::warpPerspective(cv_ptr->image, out, transform,
                       cv_ptr->image.size(),
