@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017 Lucas Walter
- * June 2017
+ * November 2017
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,44 +28,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef IMAGE_MANIP_IMAGE_DELAY_H
-#define IMAGE_MANIP_IMAGE_DELAY_H
-
-#include <deque>
-#include <dynamic_reconfigure/server.h>
-// #include <image_manip/ImageDelayConfig.h>
-#include <nodelet/nodelet.h>
+#include <nodelet/loader.h>
 #include <ros/ros.h>
-#include <vector>
+#include <string>
 
-namespace image_manip
+int main(int argc, char** argv)
 {
-
-class ImageDelay : public nodelet::Nodelet
-{
-  // image_transport::ImageTransport it_;
-  ros::Publisher pub_;
-  ros::Subscriber sub_;
-
-  #if 0
-  image_manip::ImageDelayConfig config_;
-  typedef dynamic_reconfigure::Server<image_manip::ImageDelayConfig> ReconfigureServer;
-  boost::shared_ptr< ReconfigureServer > server_;
-  void callback(image_manip::ImageDelayConfig& config,
-      uint32_t level);
-
-  boost::recursive_mutex dr_mutex_;
-  #endif
-
-  float delay_;
-  void imageCallback(const sensor_msgs::ImageConstPtr& msg);
-
-public:
-  virtual void onInit();
-  ImageDelay();
-  ~ImageDelay();
-};
-
-}  // namespace image_manip
-
-#endif  // IMAGE_MANIP_IMAGE_DELAY_H
+  ros::init(argc, argv, "roto_zoom");
+  nodelet::Loader nodelet;
+  nodelet::M_string remap(ros::names::getRemappings());
+  nodelet::V_string nargv;
+  std::string nodelet_name = ros::this_node::getName();
+  nodelet.load(nodelet_name, "image_manip/RotoZoom", remap, nargv);
+  ros::spin();
+}

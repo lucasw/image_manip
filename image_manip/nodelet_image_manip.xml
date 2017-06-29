@@ -13,4 +13,12 @@
       Republish an image after a specified delay
     </description>
   </class>
+  <class name="image_manip/RotoZoom"
+      type="image_manip::RotoZoom"
+      base_class_type="nodelet::Nodelet">
+    <description>
+      Republish an image after a specified delay
+    </description>
+  </class>
+
 </library>

@@ -105,9 +105,16 @@
     </group>
 
     <node name="delay" pkg="image_manip" type="image_delay_node"
-        output="screen">
+        output="screen"
+        if="false">
       <param name="delay" value="4.0"/>
       <param name="queue_size" value="40"/>
+      <remap from="image_in" to="combined"/>
+      <remap from="image_out" to="delayed"/>
+    </node>
+
+    <node name="roto" pkg="image_manip" type="roto_zoom_node"
+        output="screen">
       <remap from="image_in" to="combined"/>
       <remap from="image_out" to="delayed"/>
     </node>

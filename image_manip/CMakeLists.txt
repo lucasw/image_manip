@@ -16,6 +16,7 @@ roslint_cpp()
 
 generate_dynamic_reconfigure_options(
   cfg/IIRImage.cfg
+  cfg/RotoZoom.cfg
 )
 
 catkin_package(
@@ -31,7 +32,8 @@ include_directories(
 
 add_library(image_manip
   src/iir_image.cpp
-  src/image_delay.cpp)
+  src/image_delay.cpp
+  src/roto_zoom.cpp)
 add_dependencies(image_manip ${PROJECT_NAME}_gencfg)
 target_link_libraries(image_manip ${catkin_LIBRARIES})
 
@@ -45,5 +47,8 @@ target_link_libraries(iir_image_node ${catkin_LIBRARIES})
 
 add_executable(image_delay_node src/image_delay_node.cpp)
 target_link_libraries(image_delay_node ${catkin_LIBRARIES})
+
+add_executable(roto_zoom_node src/roto_zoom_node.cpp)
+target_link_libraries(roto_zoom_node ${catkin_LIBRARIES})
 
 # TODO(lucasw) install

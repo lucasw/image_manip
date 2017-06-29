@@ -28,12 +28,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef IMAGE_MANIP_IMAGE_DELAY_H
-#define IMAGE_MANIP_IMAGE_DELAY_H
+#ifndef IMAGE_MANIP_ROTO_ZOOM_H
+#define IMAGE_MANIP_ROTO_ZOOM_H
 
 #include <deque>
 #include <dynamic_reconfigure/server.h>
-// #include <image_manip/ImageDelayConfig.h>
+#include <image_manip/RotoZoomConfig.h>
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
 #include <vector>
@@ -41,31 +41,28 @@
 namespace image_manip
 {
 
-class ImageDelay : public nodelet::Nodelet
+class RotoZoom : public nodelet::Nodelet
 {
   // image_transport::ImageTransport it_;
   ros::Publisher pub_;
   ros::Subscriber sub_;
 
-  #if 0
-  image_manip::ImageDelayConfig config_;
-  typedef dynamic_reconfigure::Server<image_manip::ImageDelayConfig> ReconfigureServer;
+  image_manip::RotoZoomConfig config_;
+  typedef dynamic_reconfigure::Server<image_manip::RotoZoomConfig> ReconfigureServer;
   boost::shared_ptr< ReconfigureServer > server_;
-  void callback(image_manip::ImageDelayConfig& config,
+  void callback(image_manip::RotoZoomConfig& config,
       uint32_t level);
 
   boost::recursive_mutex dr_mutex_;
-  #endif
 
-  float delay_;
   void imageCallback(const sensor_msgs::ImageConstPtr& msg);
 
 public:
   virtual void onInit();
-  ImageDelay();
-  ~ImageDelay();
+  RotoZoom();
+  ~RotoZoom();
 };
 
 }  // namespace image_manip
 
-#endif  // IMAGE_MANIP_IMAGE_DELAY_H
+#endif  // IMAGE_MANIP_ROTO_ZOOM_H
