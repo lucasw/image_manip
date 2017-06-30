@@ -42,15 +42,21 @@
       name="load0"
       args="$(find vimjay)/data/clouds.png">
       <param name="publish_rate" value="0.5"/>
-      <remap from="image_raw" to="image_0"/>
     </node>
-    <group ns="load0/image_raw">
+    <group ns="load0">
+    <group ns="image_raw">
     <!-- http://answers.ros.org/question/255970/how-to-deactivate-image_transport-plugins/ -->
     <rosparam param="disable_pub_plugins">
       - 'image_transport/compressed'
       - 'image_transport/compressedDepth'
       - 'image_transport/theora'
     </rosparam>
+    </group>
+    <node pkg="image_manip" type="resize_node"
+        name="resize0">
+      <remap from="image_in" to="image_raw"/>
+      <remap from="image_out" to="resized"/>
+    </node>
     </group>
 
     <node pkg="image_publisher" type="image_publisher"
@@ -58,24 +64,30 @@
       args="$(find vimjay)/data/circle_aa.png" >
       <param name="publish_rate" value="0.5" />
       <!-- TODO(lucasw) this isn't working -->
-      <remap from="image_raw" to="image_1"/>
     </node>
-    <group ns="load1/image_raw">
+    <group ns="load1">
+    <group ns="image_raw">
     <!-- http://answers.ros.org/question/255970/how-to-deactivate-image_transport-plugins/ -->
     <rosparam param="disable_pub_plugins">
       - 'image_transport/compressed'
       - 'image_transport/compressedDepth'
       - 'image_transport/theora'
     </rosparam>
+    </group>
+    <node pkg="image_manip" type="resize_node"
+        name="resize1">
+      <remap from="image_in" to="image_raw"/>
+      <remap from="image_out" to="resized"/>
+    </node>
     </group>
 
     <node pkg="image_publisher" type="image_publisher"
       name="load2"
       args="$(find vimjay)/data/gradient_rect.png" >
       <param name="publish_rate" value="0.5" />
-      <remap from="image_raw" to="image_2"/>
     </node>
-    <group ns="load2/image_raw">
+    <group ns="load2">
+    <group ns="image_raw">
     <!-- http://answers.ros.org/question/255970/how-to-deactivate-image_transport-plugins/ -->
     <rosparam param="disable_pub_plugins">
       - 'image_transport/compressed'
@@ -83,14 +95,20 @@
       - 'image_transport/theora'
     </rosparam>
     </group>
+    <node pkg="image_manip" type="resize_node"
+        name="resize2">
+      <remap from="image_in" to="image_raw"/>
+      <remap from="image_out" to="resized"/>
+    </node>
+    </group>
 
     <node name="combine_image" pkg="image_manip" type="iir_image_node"
         output="screen">
       <param name="use_time_sequence" value="false"/>
       <rosparam param="b_coeffs">[0.5, 0.5, 0.5, 0.5, 0.1]</rosparam>
-      <remap from="image_0" to="load0/image_raw"/>
-      <remap from="image_1" to="load1/image_raw"/>
-      <remap from="image_2" to="load2/image_raw"/>
+      <remap from="image_0" to="load0/resized"/>
+      <remap from="image_1" to="load1/resized"/>
+      <remap from="image_2" to="load2/resized"/>
       <remap from="image_3" to="delayed"/>
       <remap from="image_out" to="combined"/>
       <param name="frame_rate" value="4"/>
@@ -121,6 +139,7 @@
   </group>
 
   <!-- this is crashing currently
+  when using lock-perspective freeze-layout hide-title 
 
   File "/opt/ros/kinetic/lib/rqt_gui/rqt_gui", line 13, in <module>
     sys.exit(main.main())
@@ -133,12 +152,11 @@
   File "/home/lucasw/catkin_ws/src/qt_gui_core/qt_gui/src/qt_gui/perspective_manager.py", line 305, in _remove_perspective
     self._menu_manager.remove_item(name)
 AttributeError: 'NoneType' object has no attribute 'remove_item'
-
   -->
   <node name="rqt_generic" pkg="rqt_gui" type="rqt_gui" 
-      args="--lock-perspective --freeze-layout --hide-title --perspective-file $(find image_manip)/config/iir.perspective" 
+      args="--perspective-file $(find image_manip)/config/iir.perspective" 
       output="screen"
-      if="false">
+      if="true">
   </node>
 
 </launch>
