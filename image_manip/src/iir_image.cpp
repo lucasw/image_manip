@@ -30,6 +30,7 @@
 
 #include <cv_bridge/cv_bridge.h>
 #include <image_manip/iir_image.h>
+#include <image_manip/utility.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
 
@@ -51,6 +52,7 @@ void IIRImage::callback(
     image_manip::IIRImageConfig& config,
     uint32_t level)
 {
+  updateTimer(timer_, config.frame_rate, config_.frame_rate);
   config_ = config;
 
   if (use_time_sequence_)
@@ -103,6 +105,10 @@ void IIRImage::update(const ros::TimerEvent& e)
   cv_image.image = out_frame;
   cv_image.encoding = "rgb8";
   pub_.publish(cv_image.toImageMsg());
+
+  // don't care if dirty_ would have become true again
+  // had it been set false immediately after testing it.
+  dirty_ = false;
 }
 
 void IIRImage::imageCallback(const sensor_msgs::ImageConstPtr& msg)
@@ -128,6 +134,11 @@ void IIRImage::imageCallback(const sensor_msgs::ImageConstPtr& msg)
   }
 
   dirty_ = true;
+  ros::TimerEvent e;
+  // negative frame_rate is a disable
+  // TODO(lucasw) or should that be the other way around?
+  if (config_.frame_rate == 0)
+    update(e);
 }
 
 void IIRImage::imagesCallback(const sensor_msgs::ImageConstPtr& msg, const size_t index)
@@ -193,10 +204,10 @@ void IIRImage::onInit()
     sub_ = getNodeHandle().subscribe("image_in", 1, &IIRImage::imageCallback, this);
   }
 
-  // TODO(lucasw) move to update function
-  const float period = 1.0 / config_.frame_rate;
-  timer_ = getPrivateNodeHandle().createTimer(ros::Duration(period),
+   timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0),
       &IIRImage::update, this);
+   // force timer start by making old frame_rate different
+   updateTimer(timer_, config_.frame_rate, config_.frame_rate - 1.0);
 }
 
 };  // namespace image_manip

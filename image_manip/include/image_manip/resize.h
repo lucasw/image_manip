@@ -52,10 +52,14 @@ class Resize : public nodelet::Nodelet
   boost::shared_ptr< ReconfigureServer > server_;
   void callback(image_manip::ResizeConfig& config,
       uint32_t level);
-
   boost::recursive_mutex dr_mutex_;
 
+  std::deque<sensor_msgs::ImageConstPtr> images_;
+  bool dirty_;
   void imageCallback(const sensor_msgs::ImageConstPtr& msg);
+  ros::Timer timer_;
+  void update(const ros::TimerEvent& e);
+
 
 public:
   virtual void onInit();

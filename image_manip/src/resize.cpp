@@ -30,6 +30,7 @@
 
 #include <cv_bridge/cv_bridge.h>
 #include <image_manip/resize.h>
+#include <image_manip/utility.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
 
@@ -155,11 +156,35 @@ void Resize::callback(
     image_manip::ResizeConfig& config,
     uint32_t level)
 {
+  updateTimer(timer_, config.frame_rate, config_.frame_rate);
   config_ = config;
 }
 
 void Resize::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
+  images_.push_back(msg);
+  dirty_ = true;
+
+  // negative frame_rate is a disable
+  // TODO(lucasw) or should that be the other way around?
+  if (config_.frame_rate == 0)
+  {
+    ros::TimerEvent e;
+    e.current_real = ros::Time::now();
+    update(e);
+  }
+}
+
+void Resize::update(const ros::TimerEvent& e)
+{
+  if (!dirty_)
+    return;
+
+  if (images_.size() == 0)
+    return;
+
+  const sensor_msgs::ImageConstPtr msg = images_[0];
+  images_.clear();
   cv_bridge::CvImageConstPtr cv_ptr;
   try
   {
@@ -192,17 +217,13 @@ void Resize::imageCallback(const sensor_msgs::ImageConstPtr& msg)
   cv_image.header = cv_ptr->header;  // or reception time of original message?
   cv_image.encoding = msg->encoding;
   pub_.publish(cv_image.toImageMsg());
-}
 
-#if 0
-void Resize::update(const sensor_msgs::ImageConstPtr& msg)
-{
-  pub_.publish(msg);
+  dirty_ = false;
 }
-#endif
 
 void Resize::onInit()
 {
+  dirty_ = false;
   pub_ = getNodeHandle().advertise<sensor_msgs::Image>("image_out", 5);
 
   server_.reset(new ReconfigureServer(dr_mutex_, getPrivateNodeHandle()));
@@ -212,6 +233,11 @@ void Resize::onInit()
 
   sub_ = getNodeHandle().subscribe("image_in", 5,
       &Resize::imageCallback, this);
+
+  timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0),
+    &Resize::update, this);
+  // force timer start by making old frame_rate different
+  updateTimer(timer_, config_.frame_rate, config_.frame_rate - 1.0);
 }
 
 };  // namespace image_manip

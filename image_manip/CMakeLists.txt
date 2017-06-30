@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
 roslint_cpp()
 
 generate_dynamic_reconfigure_options(
+  cfg/Delay.cfg
   cfg/IIRImage.cfg
   cfg/Resize.cfg
   cfg/RotoZoom.cfg
@@ -35,7 +36,8 @@ add_library(image_manip
   src/iir_image.cpp
   src/image_delay.cpp
   src/resize.cpp
-  src/roto_zoom.cpp)
+  src/roto_zoom.cpp
+  src/utility.cpp)
 add_dependencies(image_manip ${PROJECT_NAME}_gencfg)
 target_link_libraries(image_manip ${catkin_LIBRARIES})
 

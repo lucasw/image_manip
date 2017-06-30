@@ -30,6 +30,7 @@
 
 #include <cv_bridge/cv_bridge.h>
 #include <image_manip/roto_zoom.h>
+#include <image_manip/utility.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
 
@@ -49,11 +50,36 @@ void RotoZoom::callback(
     image_manip::RotoZoomConfig& config,
     uint32_t level)
 {
+  updateTimer(timer_, config.frame_rate, config_.frame_rate);
   config_ = config;
+  dirty_ = true;
 }
 
 void RotoZoom::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
+  // need mutex around image_ uses
+  images_.push_back(msg);
+  while (images_.size() > 1)
+    images_.pop_front();
+  dirty_ = true;
+
+  if (config_.frame_rate == 0)
+  {
+    ros::TimerEvent e;
+    update(e);
+  }
+}
+
+void RotoZoom::update(const ros::TimerEvent& e)
+{
+  if (!dirty_)
+    return;
+
+  if (images_.size() == 0)
+    return;
+
+  const sensor_msgs::ImageConstPtr msg = images_[0];
+  images_.clear();
   cv_bridge::CvImageConstPtr cv_ptr;
   try
   {
@@ -178,13 +204,6 @@ void RotoZoom::imageCallback(const sensor_msgs::ImageConstPtr& msg)
   cv_image.encoding = "rgb8";
   pub_.publish(cv_image.toImageMsg());
 }
-
-#if 0
-void RotoZoom::update(const sensor_msgs::ImageConstPtr& msg)
-{
-  pub_.publish(msg);
-}
-#endif
 
 void RotoZoom::onInit()
 {

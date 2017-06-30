@@ -30,6 +30,7 @@
 
 #include <cv_bridge/cv_bridge.h>
 #include <image_manip/image_delay.h>
+#include <image_manip/utility.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
 
@@ -45,52 +46,69 @@ ImageDelay::~ImageDelay()
 {
 }
 
-#if 0
 void ImageDelay::callback(
-    image_manip::ImageDelayConfig& config,
+    image_manip::DelayConfig& config,
     uint32_t level)
 {
+  updateTimer(timer_, config.frame_rate, config_.frame_rate);
   config_ = config;
 }
-#endif
 
 void ImageDelay::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
-  pub_.publish(msg);
+  images_.push_back(msg);
   // ros::Timer timer = gePrivateNodeHandle().createTimer(
   //    ros::Duration(delay_), ImageDelay::update, true);
   // TODO(lucasw) need to add this timer to a map and have it get
   // remove once it is called.
+
+  dirty_ = true;
+  if (config_.frame_rate == 0)
+  {
+    ros::TimerEvent e;
+    e.current_real = ros::Time::now();
+    update(e);
+  }
 }
 
-#if 0
-void ImageDelay::update(const sensor_msgs::ImageConstPtr& msg)
+void ImageDelay::update(const ros::TimerEvent& e)
 {
-  pub_.publish(msg);
+  bool has_published = false;
+  while (images_.size() > 0)
+  {
+    if (images_[0]->header.stamp < e.current_real - ros::Duration(config_.delay))
+    {
+      if (!has_published)
+      {
+        const sensor_msgs::ImageConstPtr msg = images_[0];
+        pub_.publish(msg);
+        has_published = true;
+      }
+      // throw away other messages
+      images_.pop_front();
+    }
+    else
+    {
+      // no other old messages to process
+      return;
+    }
+  }
 }
-#endif
 
 void ImageDelay::onInit()
 {
   pub_ = getNodeHandle().advertise<sensor_msgs::Image>("image_out", 5);
 
-  #if 0
   server_.reset(new ReconfigureServer(dr_mutex_, getPrivateNodeHandle()));
-  dynamic_reconfigure::Server<image_manip::ImageDelayConfig>::CallbackType cbt =
+  dynamic_reconfigure::Server<image_manip::DelayConfig>::CallbackType cbt =
       boost::bind(&ImageDelay::callback, this, _1, _2);
   server_->setCallback(cbt);
-  #endif
 
   // if the input frame rate is too big and the delay too long, and queue_size
   // too small, then images get dropped, which may be desirable.
   // TODO(lucasw) put the queue_size and delay into dr cfg
-  int queue_size = 10;
-  getPrivateNodeHandle().getParam("queue_size", queue_size);
-  ROS_INFO_STREAM("queue_size " << queue_size);
-  delay_ = 2.0;
-  getPrivateNodeHandle().getParam("delay", delay_);
 
-  sub_ = getNodeHandle().subscribe("image_in", queue_size,
+  sub_ = getNodeHandle().subscribe("image_in", config_.queue_size,
       &ImageDelay::imageCallback, this);
 }
 

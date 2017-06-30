@@ -2,9 +2,9 @@
 <launch>
 
   <arg name="device" default="0"/>
-  <arg name="width" default="640"/>
-  <arg name="height" default="480"/>
-  <arg name="frame_rate" default="5"/>
+  <arg name="width" default="160"/>
+  <arg name="height" default="120"/>
+  <arg name="frame_rate" default="8"/>
 
   <!--node name="color" pkg="vimjay" type="color">
     <param name="width" value="$(arg width)"/>
@@ -29,6 +29,7 @@
     <node name="iir_image" pkg="image_manip" type="iir_image_node"
         output="screen"
         if="false">
+      <param name="frame_rate" value="$(arg frame_rate)"/>
       <remap from="image_in" to="image_raw"/>
       <remap from="image_out" to="image_iir"/>
     </node>
@@ -54,6 +55,9 @@
     </group>
     <node pkg="image_manip" type="resize_node"
         name="resize0">
+      <param name="frame_rate" value="$(arg frame_rate)"/>
+      <param name="width" value="$(arg width)"/>
+      <param name="height" value="$(arg height)"/>
       <remap from="image_in" to="image_raw"/>
       <remap from="image_out" to="resized"/>
     </node>
@@ -76,6 +80,9 @@
     </group>
     <node pkg="image_manip" type="resize_node"
         name="resize1">
+      <param name="frame_rate" value="$(arg frame_rate)"/>
+      <param name="width" value="$(arg width)"/>
+      <param name="height" value="$(arg height)"/>
       <remap from="image_in" to="image_raw"/>
       <remap from="image_out" to="resized"/>
     </node>
@@ -97,6 +104,9 @@
     </group>
     <node pkg="image_manip" type="resize_node"
         name="resize2">
+      <param name="frame_rate" value="$(arg frame_rate)"/>
+      <param name="width" value="$(arg width)"/>
+      <param name="height" value="$(arg height)"/>
       <remap from="image_in" to="image_raw"/>
       <remap from="image_out" to="resized"/>
     </node>
@@ -105,6 +115,7 @@
     <node name="combine_image" pkg="image_manip" type="iir_image_node"
         output="screen">
       <param name="use_time_sequence" value="false"/>
+      <param name="frame_rate" value="$(arg frame_rate)"/>
       <rosparam param="b_coeffs">[0.5, 0.5, 0.5, 0.5, 0.1]</rosparam>
       <remap from="image_0" to="load0/resized"/>
       <remap from="image_1" to="load1/resized"/>
@@ -125,6 +136,7 @@
     <node name="delay" pkg="image_manip" type="image_delay_node"
         output="screen"
         if="false">
+      <param name="frame_rate" value="$(arg frame_rate)"/>
       <param name="delay" value="4.0"/>
       <param name="queue_size" value="40"/>
       <remap from="image_in" to="combined"/>
@@ -133,6 +145,7 @@
 
     <node name="roto" pkg="image_manip" type="roto_zoom_node"
         output="screen">
+      <param name="frame_rate" value="$(arg frame_rate)"/>
       <remap from="image_in" to="combined"/>
       <remap from="image_out" to="delayed"/>
     </node>

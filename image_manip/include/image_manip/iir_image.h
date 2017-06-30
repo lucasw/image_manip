@@ -41,6 +41,9 @@
 namespace image_manip
 {
 
+void updateTimer(ros::Timer& timer, const float frame_rate,
+    const float old_frame_rate);
+
 class IIRImage : public nodelet::Nodelet
 {
   // image_transport::ImageTransport it_;

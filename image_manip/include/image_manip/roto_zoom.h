@@ -36,6 +36,7 @@
 #include <image_manip/RotoZoomConfig.h>
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
+#include <sensor_msgs/Image.h>
 #include <vector>
 
 namespace image_manip
@@ -55,7 +56,11 @@ class RotoZoom : public nodelet::Nodelet
 
   boost::recursive_mutex dr_mutex_;
 
+  std::deque<sensor_msgs::ImageConstPtr> images_;
   void imageCallback(const sensor_msgs::ImageConstPtr& msg);
+  bool dirty_;
+  ros::Timer timer_;
+  void update(const ros::TimerEvent& e);
 
 public:
   virtual void onInit();

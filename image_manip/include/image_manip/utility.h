@@ -28,45 +28,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef IMAGE_MANIP_IMAGE_DELAY_H
-#define IMAGE_MANIP_IMAGE_DELAY_H
+#ifndef IMAGE_MANIP_UTILITY_H
+#define IMAGE_MANIP_UTILITY_H
 
-#include <deque>
-#include <dynamic_reconfigure/server.h>
-#include <image_manip/DelayConfig.h>
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
-#include <sensor_msgs/Image.h>
-#include <vector>
 
 namespace image_manip
 {
 
-class ImageDelay : public nodelet::Nodelet
-{
-  // image_transport::ImageTransport it_;
-  ros::Publisher pub_;
-  ros::Subscriber sub_;
+  void updateTimer(ros::Timer& timer, const float frame_rate,
+      const float old_frame_rate);
+}
 
-  image_manip::DelayConfig config_;
-  typedef dynamic_reconfigure::Server<image_manip::DelayConfig> ReconfigureServer;
-  boost::shared_ptr< ReconfigureServer > server_;
-  void callback(image_manip::DelayConfig& config,
-      uint32_t level);
-  boost::recursive_mutex dr_mutex_;
-
-  bool dirty_;
-  void imageCallback(const sensor_msgs::ImageConstPtr& msg);
-  ros::Timer timer_;
-  void update(const ros::TimerEvent& e);
-
-  std::deque<sensor_msgs::ImageConstPtr> images_;
-public:
-  virtual void onInit();
-  ImageDelay();
-  ~ImageDelay();
-};
-
-}  // namespace image_manip
-
-#endif  // IMAGE_MANIP_IMAGE_DELAY_H
+#endif  // IMAGE_MANIP_UTILITY_H
