@@ -5,12 +5,25 @@
   <arg name="height" default="120"/>
   <arg name="frame_rate" default="8"/>
 
+  <!--
+    (remove backslashes https://stackoverflow.com/questions/10842131/xml-comments-and)
+    v4l2-ctl \-\-list-formats
+    v4l2-ctl -d /dev/video0 \-\-list-framesizes=YUYV
+    -->
+  <arg name="cam_width" default="640"/>
+  <arg name="cam_height" default="480"/>
+  <arg name="cam_frame_rate" default="10"/>
+
+  <!-- TODO(lwalter) the latest usb_cam fails when given an invalid
+    width/height/format, the old bosch one made it work
+    Maybe it could be fixed to fail through to closest match
+    and then change the format on output -->
   <node name="usb_cam" pkg="usb_cam" type="usb_cam_node"
       output="screen"
       if="true">
-    <param name="image_width" value="$(arg width)"/>
-    <param name="image_height" value="$(arg height)"/>
-    <param name="framerate" value="$(arg frame_rate)"/>
+    <param name="image_width" value="$(arg cam_width)"/>
+    <param name="image_height" value="$(arg cam_height)"/>
+    <param name="framerate" value="$(arg cam_frame_rate)"/>
     <param name="video_device" value="/dev/video$(arg device)" />
     <!--param name="pixel_format" value="mjpeg" /-->
     <param name="pixel_format" value="yuyv"/>
