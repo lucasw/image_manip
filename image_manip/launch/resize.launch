@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="device" default="0"/>
+  <arg name="nodelet" default="true"/>
   <arg name="width" default="160"/>
   <arg name="height" default="120"/>
   <arg name="frame_rate" default="8"/>
@@ -10,6 +10,8 @@
     v4l2-ctl \-\-list-formats
     v4l2-ctl -d /dev/video0 \-\-list-framesizes=YUYV
     -->
+  <arg name="use_usb_cam" default="false"/>
+  <arg name="device" default="0"/>
   <arg name="cam_width" default="640"/>
   <arg name="cam_height" default="480"/>
   <arg name="cam_frame_rate" default="10"/>
@@ -18,9 +20,10 @@
     width/height/format, the old bosch one made it work
     Maybe it could be fixed to fail through to closest match
     and then change the format on output -->
+  <group if="$(arg use_usb_cam)">
   <node name="usb_cam" pkg="usb_cam" type="usb_cam_node"
       output="screen"
-      if="true">
+      unles="$(arg nodelet)">
     <param name="image_width" value="$(arg cam_width)"/>
     <param name="image_height" value="$(arg cam_height)"/>
     <param name="framerate" value="$(arg cam_frame_rate)"/>
@@ -36,8 +39,9 @@
     signal? -->
   <node name="dr_topics" pkg="dynamic_reconfigure_tools" type="dr_topics.py" >
   </node>
+  </group>  <!-- use_usb_cam -->
 
-
+  <group unless="$(arg nodelet)">
   <node pkg="image_publisher" type="image_publisher"
     name="load0"
     args="$(find vimjay)/data/clouds.png"
@@ -64,5 +68,29 @@
       <remap from="image_out" to="resized"/>
     </node>
   </group>
+  </group>  <!-- non nodelet -->
+
+  <group if="$(arg nodelet)">
+    <node pkg="nodelet" type="nodelet" name="manager" args="manager"
+        output="screen"/>
+
+    <node pkg="nodelet" type="nodelet"
+        name="load0" output="screen"
+        args="load image_publisher/image_publisher manager">
+      <param name="filename" value="$(find vimjay)/data/clouds.png"/>
+      <param name="publish_rate" value="0.5"/>
+    </node>
+
+    <node pkg="nodelet" type="nodelet" 
+        name="resize0"
+        args="load image_manip/Resize manager"
+        output="screen">
+      <param name="frame_rate" value="$(arg frame_rate)"/>
+      <param name="width" value="$(arg width)"/>
+      <param name="height" value="$(arg height)"/>
+      <remap from="image_in" to="load0/image_raw"/>
+      <remap from="image_out" to="resized"/>
+    </node>
+  </group>  <!-- nodelet -->
 
 </launch>
