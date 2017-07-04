@@ -10,7 +10,10 @@
     v4l2-ctl \-\-list-formats
     v4l2-ctl -d /dev/video0 \-\-list-framesizes=YUYV
     -->
-  <arg name="use_usb_cam" default="false"/>
+  <arg name="use_image_publisher" default="false"/>
+  <arg name="use_usb_cam" default="true"/>
+  <arg name="use_usb_cam_node" default="true"/>
+  <arg name="use_usb_cam_nodelet" default="false"/>
   <arg name="device" default="0"/>
   <arg name="cam_width" default="640"/>
   <arg name="cam_height" default="480"/>
@@ -21,9 +24,9 @@
     Maybe it could be fixed to fail through to closest match
     and then change the format on output -->
   <group if="$(arg use_usb_cam)">
-  <node name="usb_cam" pkg="usb_cam" type="usb_cam_node"
+  <node name="image_source" pkg="usb_cam" type="usb_cam_node"
       output="screen"
-      unles="$(arg nodelet)">
+      if="$(arg use_usb_cam_node)">
     <param name="image_width" value="$(arg cam_width)"/>
     <param name="image_height" value="$(arg cam_height)"/>
     <param name="framerate" value="$(arg cam_frame_rate)"/>
@@ -45,7 +48,7 @@
   <node pkg="image_publisher" type="image_publisher"
     name="load0"
     args="$(find vimjay)/data/clouds.png"
-    if="false">
+    if="$(arg use_image_publisher)">
     <param name="publish_rate" value="0.5"/>
   </node>
 
@@ -75,10 +78,22 @@
         output="screen"/>
 
     <node pkg="nodelet" type="nodelet"
-        name="load0" output="screen"
-        args="load image_publisher/image_publisher manager">
+        name="image_source" output="screen"
+        args="load image_publisher/image_publisher manager"
+        if="$(arg use_image_publisher)">
       <param name="filename" value="$(find vimjay)/data/clouds.png"/>
       <param name="publish_rate" value="0.5"/>
+    </node>
+    <node pkg="nodelet" type="nodelet"
+        name="image_source" output="screen"
+        args="load usb_cam/UsbCamNodelet manager"
+        if="$(arg use_usb_cam_nodelet)">
+      <param name="image_width" value="$(arg cam_width)"/>
+      <param name="image_height" value="$(arg cam_height)"/>
+      <param name="framerate" value="$(arg cam_frame_rate)"/>
+      <param name="video_device" value="/dev/video$(arg device)" />
+      <!--param name="pixel_format" value="mjpeg" /-->
+      <param name="pixel_format" value="yuyv"/>
     </node>
 
     <node pkg="nodelet" type="nodelet" 
@@ -88,7 +103,7 @@
       <param name="frame_rate" value="$(arg frame_rate)"/>
       <param name="width" value="$(arg width)"/>
       <param name="height" value="$(arg height)"/>
-      <remap from="image_in" to="load0/image_raw"/>
+      <remap from="image_in" to="image_source/image_raw"/>
       <remap from="image_out" to="resized"/>
     </node>
   </group>  <!-- nodelet -->
