@@ -216,6 +216,11 @@ void RotoZoom::onInit()
 
   sub_ = getNodeHandle().subscribe("image_in", 5,
       &RotoZoom::imageCallback, this);
+
+  timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0),
+    &RotoZoom::update, this);
+  // force timer start by making old frame_rate different
+  updateTimer(timer_, config_.frame_rate, config_.frame_rate - 1.0);
 }
 
 };  // namespace image_manip
