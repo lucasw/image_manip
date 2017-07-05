@@ -112,7 +112,7 @@
       <remap from="image_0" to="load0/resized"/>
       <remap from="image_1" to="load1/resized"/>
       <remap from="image_2" to="load2/resized"/>
-      <remap from="image_3" to="combined"/>
+      <remap from="image_3" to="delayed"/>
       <remap from="image_out" to="combined"/>
       <param name="frame_rate" value="4"/>
     </node>
@@ -125,13 +125,11 @@
     </rosparam>
     </group>
 
-    <!-- delay isn't working here currently -->
     <node name="delay" pkg="image_manip" type="image_delay_node"
-        output="screen"
-        if="false">
+        output="screen">
       <param name="frame_rate" value="$(arg frame_rate)"/>
       <param name="delay" value="4.0"/>
-      <param name="queue_size" value="40"/>
+      <param name="max_size" value="40"/>
       <remap from="image_in" to="combined"/>
       <remap from="image_out" to="delayed"/>
     </node>
@@ -140,7 +138,7 @@
         output="screen">
       <param name="frame_rate" value="$(arg frame_rate)"/>
       <remap from="image_in" to="combined"/>
-      <remap from="image_out" to="delayed"/>
+      <remap from="image_out" to="rotated"/>
     </node>
   </group>
 

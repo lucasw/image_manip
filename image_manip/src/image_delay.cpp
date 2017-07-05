@@ -56,7 +56,8 @@ void ImageDelay::callback(
 
 void ImageDelay::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
-  images_.push_back(msg);
+  if (images_.size() < config_.max_size)
+    images_.push_back(msg);
   // ros::Timer timer = gePrivateNodeHandle().createTimer(
   //    ros::Duration(delay_), ImageDelay::update, true);
   // TODO(lucasw) need to add this timer to a map and have it get
@@ -74,7 +75,7 @@ void ImageDelay::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 void ImageDelay::update(const ros::TimerEvent& e)
 {
   bool has_published = false;
-  while (images_.size() > 0)
+  if (images_.size() > 0)
   {
     if (images_[0]->header.stamp < e.current_real - ros::Duration(config_.delay))
     {
@@ -108,8 +109,13 @@ void ImageDelay::onInit()
   // too small, then images get dropped, which may be desirable.
   // TODO(lucasw) put the queue_size and delay into dr cfg
 
-  sub_ = getNodeHandle().subscribe("image_in", config_.queue_size,
+  sub_ = getNodeHandle().subscribe("image_in", 5,
       &ImageDelay::imageCallback, this);
+
+  timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0),
+      &ImageDelay::update, this);
+  // force init
+  updateTimer(timer_, config_.frame_rate, config_.frame_rate - 1.0);
 }
 
 };  // namespace image_manip
