@@ -130,7 +130,7 @@
       <param name="frame_rate" value="$(arg frame_rate)"/>
       <param name="delay" value="4.0"/>
       <param name="max_size" value="40"/>
-      <remap from="image_in" to="combined"/>
+      <remap from="image_in" to="rotated"/>
       <remap from="image_out" to="delayed"/>
     </node>
 

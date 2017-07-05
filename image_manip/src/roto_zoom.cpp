@@ -126,8 +126,8 @@ void RotoZoom::update(const ros::TimerEvent& e)
     center.y = center.y * ht; // + ht * 3 / 4;
     center.z *= ht;
 
-    off_x *= wd;
-    off_y *= ht;
+    off_x = off_x * wd + wd / 2;
+    off_y = off_y * ht + ht / 2;
     off_z *= ht;
   }
 
@@ -138,7 +138,7 @@ void RotoZoom::update(const ros::TimerEvent& e)
 
   cv::Mat in_roi = in_p.t()(cv::Rect(0, 0, 2, 4));  // ).clone();
   in_roi = in_roi.clone();
-  cv::Mat out_roi = in_roi.clone();
+  cv::Mat out_roi;
 
   {
     // This implements a standard rotozoom
@@ -185,7 +185,9 @@ void RotoZoom::update(const ros::TimerEvent& e)
     {
       for (int j = 0; j < 2; j++)
       {
-        out_roi.at<float>(i, j) = z * out_p.at<float>(i, j) / (out_p.at<float>(i, 2) + z) + center_m.at<float>(j, i);
+        out_roi.at<float>(i, j) = z * out_p.at<float>(i, j) / (out_p.at<float>(i, 2) + z) +
+            center_m.at<float>(j, i) + offset.at<float>(j, i);
+        // out_roi.at<float>(i, j) = out_p.at<float>(i, j) + center_m.at<float>(j, i) + offset.at<float>(j, i);
       }
     }
   }
