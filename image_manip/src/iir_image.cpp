@@ -89,34 +89,39 @@ void IIRImage::update(const ros::TimerEvent& e)
     if (!in_images_[i])
       continue;
 
-    cv_bridge::CvImageConstPtr cv_ptr;
-    try
+    // convert the image on demand
+    if (!in_cv_images_[i])
     {
-      // TODO(lucasw) don't want to convert the same images over and over,
-      // so store both the sensor_msg and convert and save on demand?
-      // TBD why converting to BGR8
-      cv_ptr = cv_bridge::toCvShare(in_images_[i],
-          sensor_msgs::image_encodings::RGB8);
-      //, "mono8"); // sensor_msgs::image_encodings::MONO8);
-    }
-    catch (cv_bridge::Exception& e)
-    {
-      ROS_ERROR("cv_bridge exception: %s", e.what());
-      return;
+      try
+      {
+        // TODO(lucasw) don't want to convert the same images over and over,
+        // so store both the sensor_msg and convert and save on demand?
+        // TBD why converting to BGR8-
+        // this will incur image data copy if not the native format
+        in_cv_images_[i] =
+            cv_bridge::toCvShare(in_images_[i],
+                sensor_msgs::image_encodings::RGB8);
+        //, "mono8"); // sensor_msgs::image_encodings::MONO8);
+      }
+      catch (cv_bridge::Exception& e)
+      {
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+        continue;
+      }
     }
 
     const double bn = b_coeffs_[i];
     if (out_frame.empty())
-      out_frame = cv_ptr->image * bn;
-    else if ((out_frame.size() == cv_ptr->image.size()) &&
-             (out_frame.type() == cv_ptr->image.type()))
+      out_frame = in_cv_images_[i]->image * bn;
+    else if ((out_frame.size() == in_cv_images_[i]->image.size()) &&
+             (out_frame.type() == in_cv_images_[i]->image.type()))
     {
       // TODO(lucasw) if size/type mismatch have optional mode
       // to convert the cv_ptr image.
       if (bn > 0)
-        out_frame += cv_ptr->image * bn;
+        out_frame += in_cv_images_[i]->image * bn;
       else if (bn < 0)
-        out_frame -= cv_ptr->image * -bn;
+        out_frame -= in_cv_images_[i]->image * -bn;
     }
   }
 
@@ -143,10 +148,12 @@ void IIRImage::update(const ros::TimerEvent& e)
 void IIRImage::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
   in_images_.push_front(msg);
+  in_cv_images_.push_front(cv_bridge::CvImageConstPtr());
 
   if (in_images_.size() > b_coeffs_.size())
   {
     in_images_.pop_back();
+    in_cv_images_.pop_back();
   }
 
   dirty_ = true;
@@ -163,6 +170,7 @@ void IIRImage::imagesCallback(const sensor_msgs::ImageConstPtr& msg, const size_
     return;
 
   in_images_[index] = msg;
+  in_cv_images_[index] = cv_bridge::CvImageConstPtr();
 
   dirty_ = true;
 }
@@ -190,6 +198,7 @@ void IIRImage::onInit()
       ROS_WARN_STREAM("no b coefficients");
     }
     in_images_.resize(b_coeffs_.size());
+    in_cv_images_.resize(b_coeffs_.size());
 
     for (size_t i = 0; i < b_coeffs_.size(); ++i)
     {

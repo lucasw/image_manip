@@ -112,7 +112,7 @@
       <remap from="image_0" to="load0/resized"/>
       <remap from="image_1" to="load1/resized"/>
       <remap from="image_2" to="load2/resized"/>
-      <remap from="image_3" to="delayed"/>
+      <remap from="image_3" to="combined"/>
       <remap from="image_out" to="combined"/>
       <param name="frame_rate" value="4"/>
     </node>
@@ -125,6 +125,7 @@
     </rosparam>
     </group>
 
+    <!-- delay isn't working here currently -->
     <node name="delay" pkg="image_manip" type="image_delay_node"
         output="screen"
         if="false">

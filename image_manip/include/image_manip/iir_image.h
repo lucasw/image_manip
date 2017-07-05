@@ -70,6 +70,8 @@ class IIRImage : public nodelet::Nodelet
 
   // TODO(lucasw) or a deque of sensor_msgs/Images?
   std::deque<sensor_msgs::ImageConstPtr> in_images_;
+  // store converted images also, 1:1 with in_images_
+  std::deque<cv_bridge::CvImageConstPtr> in_cv_images_;
   std::deque<sensor_msgs::ImageConstPtr> out_images_;
   bool dirty_;
 
