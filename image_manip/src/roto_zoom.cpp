@@ -118,7 +118,7 @@ void RotoZoom::update(const ros::TimerEvent& e)
 
   float off_x = config_.off_x;
   float off_y = config_.off_y;
-  float off_z = config_.off_z;
+  // float off_z = config_.off_z;
 
   if (nrm_px)
   {
@@ -128,7 +128,7 @@ void RotoZoom::update(const ros::TimerEvent& e)
 
     off_x = off_x * wd + wd / 2;
     off_y = off_y * ht + ht / 2;
-    off_z *= ht;
+    // off_z *= ht;
   }
 
   cv::Mat in_p = (cv::Mat_<float>(3, 4) <<
@@ -146,7 +146,8 @@ void RotoZoom::update(const ros::TimerEvent& e)
     cv::Mat offset = (cv::Mat_<float>(3, 4) <<
                       off_x, off_x, off_x, off_x,
                       off_y, off_y, off_y, off_y,
-                      off_z, off_z, off_z, off_z);
+                      0, 0, 0, 0);
+                      // off_z, off_z, off_z, off_z);
 
     // shift the image after rotation
     cv::Mat center_m = (cv::Mat_<float>(3, 4) <<
@@ -180,12 +181,13 @@ void RotoZoom::update(const ros::TimerEvent& e)
 
     // this moves the image away from the 0 plane
     // TODO(lucasw) this has no effect
-    const float z = 1.0;  // config_.z;
+    const float z = config_.z;
     for (int i = 0; i < 4; i++)
     {
       for (int j = 0; j < 2; j++)
       {
-        out_roi.at<float>(i, j) = z * out_p.at<float>(i, j) / (out_p.at<float>(i, 2) + z) +
+        // out_roi.at<float>(i, j) = z * out_p.at<float>(i, j) / (out_p.at<float>(i, 2) + z) +
+        out_roi.at<float>(i, j) = z * out_p.at<float>(i, j) +
             center_m.at<float>(j, i) + offset.at<float>(j, i);
         // out_roi.at<float>(i, j) = out_p.at<float>(i, j) + center_m.at<float>(j, i) + offset.at<float>(j, i);
       }
