@@ -84,27 +84,56 @@ void IIRImage::update(const ros::TimerEvent& e)
 
   cv::Mat out_frame;
 
-  for (size_t i = 0; i < in_frames_.size() && i < b_coeffs_.size(); ++i)
+  for (size_t i = 0; i < in_images_.size() && i < b_coeffs_.size(); ++i)
   {
-    const double bn = b_coeffs_[i];
-    if (i == 0)
-      out_frame = in_frames_[i] * bn;
-    else if ((out_frame.size() == in_frames_[i].size()) &&
-             (out_frame.type() == in_frames_[i].type()))
+    if (!in_images_[i])
+      continue;
+
+    cv_bridge::CvImageConstPtr cv_ptr;
+    try
     {
+      // TODO(lucasw) don't want to convert the same images over and over,
+      // so store both the sensor_msg and convert and save on demand?
+      // TBD why converting to BGR8
+      cv_ptr = cv_bridge::toCvShare(in_images_[i],
+          sensor_msgs::image_encodings::RGB8);
+      //, "mono8"); // sensor_msgs::image_encodings::MONO8);
+    }
+    catch (cv_bridge::Exception& e)
+    {
+      ROS_ERROR("cv_bridge exception: %s", e.what());
+      return;
+    }
+
+    const double bn = b_coeffs_[i];
+    if (out_frame.empty())
+      out_frame = cv_ptr->image * bn;
+    else if ((out_frame.size() == cv_ptr->image.size()) &&
+             (out_frame.type() == cv_ptr->image.type()))
+    {
+      // TODO(lucasw) if size/type mismatch have optional mode
+      // to convert the cv_ptr image.
       if (bn > 0)
-        out_frame += in_frames_[i] * bn;
+        out_frame += cv_ptr->image * bn;
       else if (bn < 0)
-        out_frame -= in_frames_[i] * -bn;
+        out_frame -= cv_ptr->image * -bn;
     }
   }
+
+  if (out_frame.empty())
+    return;
 
   // TODO(lucasw) this may be argument for keeping original Image messages around
   cv_bridge::CvImage cv_image;
   cv_image.header.stamp = ros::Time::now();  // or reception time of original message?
   cv_image.image = out_frame;
   cv_image.encoding = "rgb8";
-  pub_.publish(cv_image.toImageMsg());
+  const sensor_msgs::ImageConstPtr out_image(cv_image.toImageMsg());
+  pub_.publish(out_image);
+
+  out_images_.push_front(out_image);
+  if (out_images_.size() > a_coeffs_.size())
+    out_images_.pop_back();
 
   // don't care if dirty_ would have become true again
   // had it been set false immediately after testing it.
@@ -113,24 +142,11 @@ void IIRImage::update(const ros::TimerEvent& e)
 
 void IIRImage::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
-  cv_bridge::CvImageConstPtr cv_ptr;
-  try
-  {
-    // TBD why converting to BGR8
-    cv_ptr = cv_bridge::toCvShare(msg, sensor_msgs::image_encodings::RGB8);
-    //, "mono8"); // sensor_msgs::image_encodings::MONO8);
-  }
-  catch (cv_bridge::Exception& e)
-  {
-    ROS_ERROR("cv_bridge exception: %s", e.what());
-    return;
-  }
+  in_images_.push_front(msg);
 
-  in_frames_.push_front(cv_ptr->image.clone());
-
-  if (in_frames_.size() > b_coeffs_.size())
+  if (in_images_.size() > b_coeffs_.size())
   {
-    in_frames_.pop_back();
+    in_images_.pop_back();
   }
 
   dirty_ = true;
@@ -143,23 +159,10 @@ void IIRImage::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 
 void IIRImage::imagesCallback(const sensor_msgs::ImageConstPtr& msg, const size_t index)
 {
-  if (index >= in_frames_.size())
+  if (index >= in_images_.size())
     return;
 
-  cv_bridge::CvImageConstPtr cv_ptr;
-  try
-  {
-    // TBD why converting to BGR8
-    cv_ptr = cv_bridge::toCvShare(msg, sensor_msgs::image_encodings::RGB8);
-    //, "mono8"); // sensor_msgs::image_encodings::MONO8);
-  }
-  catch (cv_bridge::Exception& e)
-  {
-    ROS_ERROR("cv_bridge exception: %s", e.what());
-    return;
-  }
-
-  in_frames_[index] = cv_ptr->image.clone();
+  in_images_[index] = msg;
 
   dirty_ = true;
 }
@@ -186,7 +189,7 @@ void IIRImage::onInit()
     {
       ROS_WARN_STREAM("no b coefficients");
     }
-    in_frames_.resize(b_coeffs_.size());
+    in_images_.resize(b_coeffs_.size());
 
     for (size_t i = 0; i < b_coeffs_.size(); ++i)
     {

@@ -6,14 +6,6 @@
   <arg name="height" default="120"/>
   <arg name="frame_rate" default="8"/>
 
-  <!--node name="color" pkg="vimjay" type="color">
-    <param name="width" value="$(arg width)"/>
-    <param name="height" value="$(arg height)"/>
-    <param name="red" value="244"/>
-    <param name="green" value="244"/>
-    <param name="blue" value="244"/>
-  </node-->
-
   <node name="usb_cam" pkg="usb_cam" type="usb_cam_node"
       output="screen"
       if="false">

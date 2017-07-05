@@ -63,14 +63,14 @@ class IIRImage : public nodelet::Nodelet
   bool use_time_sequence_;
   std::vector<double> b_coeffs_;
   // so far just a fir
-  // std::vector<cv::Mat> a_coeffs;
+  std::vector<double> a_coeffs_;
 
   ros::Timer timer_;
   void update(const ros::TimerEvent& e);
 
   // TODO(lucasw) or a deque of sensor_msgs/Images?
-  std::deque<cv::Mat> in_frames_;
-  // std::deque<cv::Mat> out_frames_;
+  std::deque<sensor_msgs::ImageConstPtr> in_images_;
+  std::deque<sensor_msgs::ImageConstPtr> out_images_;
   bool dirty_;
 
   void imageCallback(const sensor_msgs::ImageConstPtr& msg);
