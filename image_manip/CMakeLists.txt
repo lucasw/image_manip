@@ -17,6 +17,7 @@ roslint_cpp()
 generate_dynamic_reconfigure_options(
   cfg/Delay.cfg
   cfg/IIRImage.cfg
+  cfg/ImageDeque.cfg
   cfg/Resize.cfg
   cfg/RotoZoom.cfg
 )
@@ -35,6 +36,7 @@ include_directories(
 add_library(image_manip
   src/iir_image.cpp
   src/image_delay.cpp
+  src/image_deque.cpp
   src/resize.cpp
   src/roto_zoom.cpp
   src/utility.cpp)
