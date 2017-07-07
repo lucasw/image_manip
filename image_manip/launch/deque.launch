@@ -101,8 +101,8 @@
         args="load image_manip/ImageDeque manager"
         output="screen">
       <param name="frame_rate" value="$(arg frame_rate)"/>
-      <param name="width" value="$(arg width)"/>
-      <param name="height" value="$(arg height)"/>
+      <param name="capture_continuous" value="true"/>
+      <param name="restrict_size" value="true"/>
       <remap from="image" to="image_source/image_raw"/>
       <remap from="anim" to="select"/>
     </node>
