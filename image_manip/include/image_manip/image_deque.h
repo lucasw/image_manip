@@ -53,11 +53,14 @@ class ImageDeque : public nodelet::Nodelet
   ros::Publisher anim_pub_;
   ros::Subscriber image_sub_;
 
-  unsigned int index_;
 
   // this is for appending onto the animation output
   sensor_msgs::ImageConstPtr live_frame_;
   std::deque<sensor_msgs::ImageConstPtr> images_;
+
+  unsigned int index_;
+  ros::Subscriber index_sub_;
+  void indexCallback(const std_msgs::UInt16::ConstPtr& msg);
 
   // TODO(lucasw) are these needed if dynamic reconfigure handles them?
   bool capture_single_;

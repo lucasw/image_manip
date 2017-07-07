@@ -125,7 +125,17 @@ void ImageDeque::imageCallback(const sensor_msgs::ImageConstPtr& msg)
   trigger.data = true;
   captured_trigger_pub_.publish(trigger);
 
-  dirty_ = true;
+  // dirty_ = true;
+}
+
+void ImageDeque::indexCallback(const std_msgs::UInt16::ConstPtr& msg)
+{
+  // if index is incrementing slower than the capture rate,
+  // then odd backwards motion may result.
+  if (msg->data != index_)
+    dirty_ = true;
+  index_ = msg->data;
+
   if (config_.frame_rate == 0)
   {
     ros::TimerEvent e;
@@ -136,6 +146,10 @@ void ImageDeque::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 
 void ImageDeque::update(const ros::TimerEvent& e)
 {
+  if (!dirty_)
+    return;
+
+  ROS_INFO_STREAM(index_ << " " << images_.size());
   // TEMP code to show output of frames
   // TODO(lucasw) have index be controlled by topic
   if (index_ <= images_.size())
@@ -145,18 +159,21 @@ void ImageDeque::update(const ros::TimerEvent& e)
     else if (live_frame_)
       // preview the live frame at the end of the saved animation
       anim_pub_.publish(live_frame_);
-    index_++;
+    // index_++;
   }
 
   // ROS_INFO_STREAM(images_.size() << " " << index_);
 
   // TODO(lucasw) maybe if config_.start_index changes
   // it should force index_ to it, instead of waiting to cycle.
+  #if 0
   if ((config_.use_live_frame && (index_ > images_.size())) ||
       (!config_.use_live_frame) && (index_ >= images_.size()))
   {
     index_ = config_.start_index;
   }
+  #endif
+
   dirty_ = false;
 }
 
@@ -166,7 +183,8 @@ void ImageDeque::onInit()
   captured_pub_ = getNodeHandle().advertise<sensor_msgs::Image>("captured_image", 1, true);
   anim_pub_ = getNodeHandle().advertise<sensor_msgs::Image>("anim", 1);
   image_sub_ = getNodeHandle().subscribe("image", 1, &ImageDeque::imageCallback, this);
-  // TODO(lucasw) also dynamic reconfigure for these
+  index_sub_ = getNodeHandle().subscribe<std_msgs::UInt16>("index", 1,
+                &ImageDeque::indexCallback, this);
   single_sub_ = getNodeHandle().subscribe<std_msgs::Bool>("single", 1,
                 &ImageDeque::singleCallback, this);
   continuous_sub_ = getNodeHandle().subscribe<std_msgs::Bool>("continuous", 1,
