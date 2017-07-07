@@ -122,8 +122,8 @@ void RotoZoom::update(const ros::TimerEvent& e)
 
   if (nrm_px)
   {
-    center.x = center.x * wd; //  + wd * 3 / 4;
-    center.y = center.y * ht; // + ht * 3 / 4;
+    center.x = center.x * wd;  // + wd * 3 / 4;
+    center.y = center.y * ht;  // + ht * 3 / 4;
     center.z *= ht;
 
     off_x = off_x * wd + wd / 2;

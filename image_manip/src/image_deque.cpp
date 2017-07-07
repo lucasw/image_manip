@@ -94,10 +94,10 @@ void ImageDeque::continuousCallback(const std_msgs::Bool::ConstPtr& msg)
 
 void ImageDeque::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
-  if (!config_.use_live_frame &&(!(capture_single_ || config_.capture_continuous)))
+  if (!config_.use_live_frame && !(capture_single_ || config_.capture_continuous))
     return;
 
-	live_frame_ = msg;
+  live_frame_ = msg;
 
   if (!(capture_single_ || config_.capture_continuous))
     return;
@@ -145,7 +145,7 @@ void ImageDeque::update(const ros::TimerEvent& e)
   if (index_ <= images_.size())
   {
     if (index_ < images_.size())
-			anim_pub_.publish(images_[index_]);
+      anim_pub_.publish(images_[index_]);
     else
       // preview the live frame at the end of the saved animation
       anim_pub_.publish(live_frame_);
@@ -154,7 +154,7 @@ void ImageDeque::update(const ros::TimerEvent& e)
 
   // ROS_INFO_STREAM(images_.size() << " " << index_);
 
-	// TODO(lucasw) maybe if config_.start_index changes
+  // TODO(lucasw) maybe if config_.start_index changes
   // it should force index_ to it, instead of waiting to cycle.
   if ((config_.use_live_frame && (index_ > images_.size())) ||
       (!config_.use_live_frame) && (index_ >= images_.size()))

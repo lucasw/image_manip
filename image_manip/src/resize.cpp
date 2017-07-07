@@ -47,8 +47,8 @@ bool resizeFixAspect(const cv::Mat& tmp0, cv::Mat& tmp1,
 {
   tmp1 = cv::Mat(sz, tmp0.type(), cv::Scalar::all(0));
 
-  const float aspect_0 = (float)tmp0.cols / (float)tmp0.rows;
-  const float aspect_1 = (float)tmp1.cols / (float)tmp1.rows;
+  const float aspect_0 = static_cast<float>(tmp0.cols) / static_cast<float>(tmp0.rows);
+  const float aspect_1 = static_cast<float>(tmp1.cols) / static_cast<float>(tmp1.rows);
 
   // this is the subimage that has to fit within tmp1
   // it will be shrunk down as necessary and border offset
@@ -97,8 +97,8 @@ bool resizeFixAspectFill(const cv::Mat& tmp0, cv::Mat& tmp1,
 {
   tmp1 = cv::Mat(sz, tmp0.type(), cv::Scalar::all(0));
   // width/height
-  const float aspect_0 = (float)tmp0.cols / (float)tmp0.rows;
-  const float aspect_1 = (float)tmp1.cols / (float)tmp1.rows;
+  const float aspect_0 = static_cast<float>(tmp0.cols) / static_cast<float>(tmp0.rows);
+  const float aspect_1 = static_cast<float>(tmp1.cols) / static_cast<float>(tmp1.rows);
 
   const cv::Size src_sz = tmp0.size();
 
@@ -201,15 +201,15 @@ void Resize::update(const ros::TimerEvent& e)
   cv_bridge::CvImage cv_image;
   const cv::Size size(config_.width, config_.height);
 
-	if (config_.mode == 0)
+  if (config_.mode == 0)
   {
     resizeFixAspect(cv_ptr->image, cv_image.image, size, config_.interpolate_mode);
   }
-	if (config_.mode == 1)
+  if (config_.mode == 1)
   {
     resizeFixAspectFill(cv_ptr->image, cv_image.image, size, config_.interpolate_mode);
   }
-	if (config_.mode == 2)
+  if (config_.mode == 2)
   {
     cv::resize(cv_ptr->image, cv_image.image, size, 0, 0, config_.interpolate_mode);
   }

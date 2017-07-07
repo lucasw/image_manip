@@ -61,7 +61,7 @@ class ImageDeque : public nodelet::Nodelet
   sensor_msgs::ImageConstPtr live_frame_;
   std::deque<sensor_msgs::ImageConstPtr> images_;
 
-	// TODO(lucasw) are these needed if dynamic reconfigure handles them?
+  // TODO(lucasw) are these needed if dynamic reconfigure handles them?
   bool capture_single_;
   ros::Subscriber single_sub_;
   void singleCallback(const std_msgs::Bool::ConstPtr& msg);

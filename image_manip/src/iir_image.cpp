@@ -216,10 +216,10 @@ void IIRImage::onInit()
     sub_ = getNodeHandle().subscribe("image_in", 1, &IIRImage::imageCallback, this);
   }
 
-   timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0),
+  timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0),
       &IIRImage::update, this);
-   // force timer start by making old frame_rate different
-   updateTimer(timer_, config_.frame_rate, config_.frame_rate - 1.0);
+  // force timer start by making old frame_rate different
+  updateTimer(timer_, config_.frame_rate, config_.frame_rate - 1.0);
 }
 
 };  // namespace image_manip
