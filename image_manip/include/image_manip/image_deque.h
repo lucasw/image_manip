@@ -55,8 +55,6 @@ class ImageDeque : public nodelet::Nodelet
 
   unsigned int index_;
 
-  void pubImage(const ros::TimerEvent& e);
-
   // this is for appending onto the animation output
   sensor_msgs::ImageConstPtr live_frame_;
   std::deque<sensor_msgs::ImageConstPtr> images_;

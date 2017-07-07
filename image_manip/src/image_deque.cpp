@@ -38,7 +38,8 @@
 namespace image_manip
 {
 
-ImageDeque::ImageDeque()
+ImageDeque::ImageDeque() :
+  dirty_(false)
 {
 }
 
@@ -50,8 +51,6 @@ void ImageDeque::callback(
     image_manip::ImageDequeConfig& config,
     uint32_t level)
 {
-  updateTimer(timer_, config.frame_rate, config_.frame_rate);
-
   if (level & 1)
   {
     if (config.capture_single)
@@ -59,12 +58,7 @@ void ImageDeque::callback(
       capture_single_ = true;
       config.capture_single = false;
     }
-  }
-  if (level & 2)
-  {
-    if (config.update_rate > 0.0)
-      timer_ = getNodeHandle().createTimer(ros::Duration(1.0 / config.update_rate),
-          &ImageDeque::pubImage, this);
+    updateTimer(timer_, config.frame_rate, config_.frame_rate);
   }
   if (level & 4)
   {
@@ -72,6 +66,7 @@ void ImageDeque::callback(
     index_ = config_.index;
   }
 
+  dirty_ = true;
   config_ = config;
 }
 
@@ -139,14 +134,15 @@ void ImageDeque::imageCallback(const sensor_msgs::ImageConstPtr& msg)
   }
 }
 
-// TEMP code to show output of frames
 void ImageDeque::update(const ros::TimerEvent& e)
 {
+  // TEMP code to show output of frames
+  // TODO(lucasw) have index be controlled by topic
   if (index_ <= images_.size())
   {
     if (index_ < images_.size())
       anim_pub_.publish(images_[index_]);
-    else
+    else if (live_frame_)
       // preview the live frame at the end of the saved animation
       anim_pub_.publish(live_frame_);
     index_++;
@@ -161,11 +157,11 @@ void ImageDeque::update(const ros::TimerEvent& e)
   {
     index_ = config_.start_index;
   }
+  dirty_ = false;
 }
 
 void ImageDeque::onInit()
 {
-//  pub_ = getNodeHandle().advertise<sensor_msgs::Image>("image_out", 5);
   captured_trigger_pub_ = getNodeHandle().advertise<std_msgs::Bool>("captured_image_trigger", 1);
   captured_pub_ = getNodeHandle().advertise<sensor_msgs::Image>("captured_image", 1, true);
   anim_pub_ = getNodeHandle().advertise<sensor_msgs::Image>("anim", 1);
