@@ -54,6 +54,9 @@ target_link_libraries(iir_image_node ${catkin_LIBRARIES})
 add_executable(image_delay_node src/image_delay_node.cpp)
 target_link_libraries(image_delay_node ${catkin_LIBRARIES})
 
+add_executable(image_deque_node src/image_deque_node.cpp)
+target_link_libraries(image_deque_node ${catkin_LIBRARIES})
+
 add_executable(resize_node src/resize_node.cpp)
 target_link_libraries(resize_node ${catkin_LIBRARIES})
 

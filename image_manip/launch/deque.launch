@@ -1,0 +1,111 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="nodelet" default="true"/>
+  <arg name="width" default="160"/>
+  <arg name="height" default="120"/>
+  <arg name="frame_rate" default="8"/>
+
+  <!--
+    (remove backslashes https://stackoverflow.com/questions/10842131/xml-comments-and)
+    v4l2-ctl \-\-list-formats
+    v4l2-ctl -d /dev/video0 \-\-list-framesizes=YUYV
+    -->
+  <arg name="use_image_publisher" default="false"/>
+  <arg name="use_usb_cam" default="true"/>
+  <arg name="use_usb_cam_node" default="true"/>
+  <arg name="use_usb_cam_nodelet" default="false"/>
+  <arg name="device" default="0"/>
+  <arg name="cam_width" default="640"/>
+  <arg name="cam_height" default="480"/>
+  <arg name="cam_frame_rate" default="10"/>
+
+  <!-- TODO(lwalter) the latest usb_cam fails when given an invalid
+    width/height/format, the old bosch one made it work
+    Maybe it could be fixed to fail through to closest match
+    and then change the format on output -->
+  <group if="$(arg use_usb_cam)">
+  <node name="image_source" pkg="usb_cam" type="usb_cam_node"
+      output="screen"
+      if="$(arg use_usb_cam_node)">
+    <param name="image_width" value="$(arg cam_width)"/>
+    <param name="image_height" value="$(arg cam_height)"/>
+    <param name="framerate" value="$(arg cam_frame_rate)"/>
+    <param name="video_device" value="/dev/video$(arg device)" />
+    <!--param name="pixel_format" value="mjpeg" /-->
+    <param name="pixel_format" value="yuyv"/>
+  </node>
+  <node name="v4l2ucp" pkg="v4l2ucp" type="v4l2ucp" >
+    <param name="device" value="/dev/video$(arg device)" />
+  </node>
+  <!-- TODO(lucasw) Need to delay launch of this until the v4l2ucp node above
+    has complete creating all the parameters- maybe it should publish an 'update'
+    signal? -->
+  <node name="dr_topics" pkg="dynamic_reconfigure_tools" type="dr_topics.py" >
+  </node>
+  </group>  <!-- use_usb_cam -->
+
+  <group unless="$(arg nodelet)">
+  <node pkg="image_publisher" type="image_publisher"
+    name="load0"
+    args="$(find vimjay)/data/clouds.png"
+    if="$(arg use_image_publisher)">
+    <param name="publish_rate" value="0.5"/>
+  </node>
+
+  <group ns="usb_cam">
+    <group ns="image_raw">
+    <!-- http://answers.ros.org/question/255970/how-to-deactivate-image_transport-plugins/ -->
+    <rosparam param="disable_pub_plugins">
+      - 'image_transport/compressed'
+      - 'image_transport/compressedDepth'
+      - 'image_transport/theora'
+    </rosparam>
+    </group>
+    <node pkg="image_manip" type="image_deque_node"
+        name="deque0"
+        output="screen">
+      <param name="frame_rate" value="$(arg frame_rate)"/>
+      <param name="width" value="$(arg width)"/>
+      <param name="height" value="$(arg height)"/>
+      <remap from="image_in" to="image_raw"/>
+      <remap from="image_out" to="selected"/>
+    </node>
+  </group>
+  </group>  <!-- non nodelet -->
+
+  <group if="$(arg nodelet)">
+    <node pkg="nodelet" type="nodelet" name="manager" args="manager"
+        output="screen"/>
+
+    <node pkg="nodelet" type="nodelet"
+        name="image_source" output="screen"
+        args="load image_publisher/image_publisher manager"
+        if="$(arg use_image_publisher)">
+      <param name="filename" value="$(find vimjay)/data/clouds.png"/>
+      <param name="publish_rate" value="0.5"/>
+    </node>
+    <node pkg="nodelet" type="nodelet"
+        name="image_source" output="screen"
+        args="load usb_cam/UsbCamNodelet manager"
+        if="$(arg use_usb_cam_nodelet)">
+      <param name="image_width" value="$(arg cam_width)"/>
+      <param name="image_height" value="$(arg cam_height)"/>
+      <param name="framerate" value="$(arg cam_frame_rate)"/>
+      <param name="video_device" value="/dev/video$(arg device)" />
+      <!--param name="pixel_format" value="mjpeg" /-->
+      <param name="pixel_format" value="yuyv"/>
+    </node>
+
+    <node pkg="nodelet" type="nodelet" 
+        name="deque0"
+        args="load image_manip/ImageDeque manager"
+        output="screen">
+      <param name="frame_rate" value="$(arg frame_rate)"/>
+      <param name="width" value="$(arg width)"/>
+      <param name="height" value="$(arg height)"/>
+      <remap from="image" to="image_source/image_raw"/>
+      <remap from="anim" to="select"/>
+    </node>
+  </group>  <!-- nodelet -->
+
+</launch>

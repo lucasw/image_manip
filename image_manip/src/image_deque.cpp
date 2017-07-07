@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017 Lucas Walter
- * June 2017
+ * July 2017
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

@@ -34,11 +34,11 @@
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "image_delay");
+  ros::init(argc, argv, "image_deque");
   nodelet::Loader nodelet;
   nodelet::M_string remap(ros::names::getRemappings());
   nodelet::V_string nargv;
   std::string nodelet_name = ros::this_node::getName();
-  nodelet.load(nodelet_name, "image_manip/ImageDelay", remap, nargv);
+  nodelet.load(nodelet_name, "image_manip/ImageDeque", remap, nargv);
   ros::spin();
 }

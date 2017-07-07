@@ -28,8 +28,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef IMAGE_MANIP_IMAGE_DELAY_H
-#define IMAGE_MANIP_IMAGE_DELAY_H
+#ifndef IMAGE_MANIP_IMAGE_DEQUE_H
+#define IMAGE_MANIP_IMAGE_DEQUE_H
 
 #include <deque>
 #include <dynamic_reconfigure/server.h>
@@ -94,4 +94,4 @@ public:
 
 }  // namespace image_manip
 
-#endif  // IMAGE_MANIP_IMAGE_DELAY_H
+#endif  // IMAGE_MANIP_IMAGE_DEQUE_H
