@@ -183,13 +183,15 @@ void Resize::update(const ros::TimerEvent& e)
   if (images_.size() == 0)
     return;
 
+  // TODO(lucasw) optionally convert encoding to dr type or keep same
+  const std::string encoding = sensor_msgs::image_encodings::RGB8;
   const sensor_msgs::ImageConstPtr msg = images_[0];
   images_.clear();
   cv_bridge::CvImageConstPtr cv_ptr;
   try
   {
     // TBD why converting to BGR8
-    cv_ptr = cv_bridge::toCvShare(msg, sensor_msgs::image_encodings::RGB8);
+    cv_ptr = cv_bridge::toCvShare(msg, encoding);
     //, "mono8"); // sensor_msgs::image_encodings::MONO8);
   }
   catch (cv_bridge::Exception& e)
@@ -215,7 +217,7 @@ void Resize::update(const ros::TimerEvent& e)
   }
 
   cv_image.header = cv_ptr->header;  // or reception time of original message?
-  cv_image.encoding = msg->encoding;
+  cv_image.encoding = encoding;
   pub_.publish(cv_image.toImageMsg());
 
   dirty_ = false;
