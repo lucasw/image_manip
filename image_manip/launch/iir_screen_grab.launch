@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="width" default="320"/>
+  <arg name="height" default="240"/>
+  <arg name="frame_rate" default="20"/>
+
+  <group ns="image_source">
+
+    <node name="nodelet_manager" pkg="nodelet" type="nodelet" 
+        args="manager" output="screen" />
+
+		<node name="screen_grab" pkg="nodelet" type="nodelet"
+				args="load screen_grab/ScreenGrab nodelet_manager" output="screen" >
+			<param name="update_rate" value="$(arg frame_rate)" />
+			<param name="x_offset" value="50" />
+			<param name="y_offset" value="50" />
+			<param name="width" value="500" />
+			<param name="height" value="500" />
+		</node>
+
+    <group ns="image_raw">
+    <!-- http://answers.ros.org/question/255970/how-to-deactivate-image_transport-plugins/ -->
+    <rosparam param="disable_pub_plugins">
+      - 'image_transport/compressed'
+      - 'image_transport/compressedDepth'
+      - 'image_transport/theora'
+    </rosparam>
+    </group>
+
+    <node pkg="nodelet" type="nodelet" 
+        name="resize0"
+        args="load image_manip/Resize nodelet_manager"
+        output="screen">
+      <param name="frame_rate" value="$(arg frame_rate)"/>
+      <param name="width" value="$(arg width)"/>
+      <param name="height" value="$(arg height)"/>
+      <remap from="image_in" to="image"/>
+      <remap from="image_out" to="resized"/>
+    </node>
+
+    <node pkg="nodelet" type="nodelet" 
+        name="iir0"
+        args="load image_manip/IIRImage nodelet_manager"
+        output="screen">
+      <param name="use_time_sequence" value="true"/>
+      <param name="frame_rate" value="$(arg frame_rate)"/>
+      <remap from="image_in" to="resized"/>
+      <remap from="image_out" to="filtered"/>
+    </node>
+
+  </group>
+  <node name="rqt_generic" pkg="rqt_gui" type="rqt_gui" 
+      args="--perspective-file $(find image_manip)/config/iir.perspective" 
+      output="screen"
+      if="true">
+  </node>
+
+</launch>
