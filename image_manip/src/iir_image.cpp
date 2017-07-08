@@ -146,16 +146,18 @@ void IIRImage::update(const ros::TimerEvent& e)
   }
   if (out_frame.empty())
     return;
-  for (size_t i = 1; i < out_frames_.size() && i < a_coeffs_.size(); ++i)
+  // since the current frame hasn't been pushed yet,
+  // i-1 is actually index i for out_frames_.
+  for (size_t i = 1; (i - 1) < out_frames_.size() && i < a_coeffs_.size(); ++i)
   {
-    if ((out_frame.size() == out_frames_[i].size()) &&
-        (out_frame.type() == out_frames_[i].type()))
+    if ((out_frame.size() == out_frames_[i - 1].size()) &&
+        (out_frame.type() == out_frames_[i - 1].type()))
     {
       const float an = -a_coeffs_[i];
       if (an > 0)
-        out_frame += out_frames_[i] * an;
+        out_frame += out_frames_[i - 1] * an;
       else if (an < 0)
-        out_frame -= out_frames_[i] * -an;
+        out_frame -= out_frames_[i - 1] * -an;
     }
   }
   if (!out_frame.empty() && a_coeffs_.size() > 0)

@@ -2,8 +2,8 @@
 <launch>
 
   <arg name="device" default="0"/>
-  <arg name="width" default="160"/>
-  <arg name="height" default="120"/>
+  <arg name="width" default="320"/>
+  <arg name="height" default="240"/>
   <arg name="frame_rate" default="8"/>
   <arg name="use_usb_cam" default="true"/>
 
