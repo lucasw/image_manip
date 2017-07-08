@@ -56,7 +56,10 @@ void IIRImage::callback(
   config_ = config;
 
   if (use_time_sequence_)
+  {
     b_coeffs_.resize(8);
+    a_coeffs_.resize(8);
+  }
   if (b_coeffs_.size() > 0)
     b_coeffs_[0] = config_.b0;
   if (b_coeffs_.size() > 1)
@@ -73,6 +76,23 @@ void IIRImage::callback(
     b_coeffs_[6] = config_.b6;
   if (b_coeffs_.size() > 7)
     b_coeffs_[7] = config_.b7;
+
+  if (a_coeffs_.size() > 0)
+    a_coeffs_[0] = config_.a0;
+  if (a_coeffs_.size() > 1)
+    a_coeffs_[1] = config_.a1;
+  if (a_coeffs_.size() > 2)
+    a_coeffs_[2] = config_.a2;
+  if (a_coeffs_.size() > 3)
+    a_coeffs_[3] = config_.a3;
+  if (a_coeffs_.size() > 4)
+    a_coeffs_[4] = config_.a4;
+  if (a_coeffs_.size() > 5)
+    a_coeffs_[5] = config_.a5;
+  if (a_coeffs_.size() > 6)
+    a_coeffs_[6] = config_.a6;
+  if (a_coeffs_.size() > 7)
+    a_coeffs_[7] = config_.a7;
 
   dirty_ = true;
 }
@@ -124,9 +144,24 @@ void IIRImage::update(const ros::TimerEvent& e)
         out_frame -= in_cv_images_[i]->image * -bn;
     }
   }
-
   if (out_frame.empty())
     return;
+  for (size_t i = 1; i < out_frames_.size() && i < a_coeffs_.size(); ++i)
+  {
+    if ((out_frame.size() == out_frames_[i].size()) &&
+        (out_frame.type() == out_frames_[i].type()))
+    {
+      const float an = -a_coeffs_[i];
+      if (an > 0)
+        out_frame += out_frames_[i] * an;
+      else if (an < 0)
+        out_frame -= out_frames_[i] * -an;
+    }
+  }
+  if (!out_frame.empty() && a_coeffs_.size() > 0)
+  {
+    out_frame *= 1.0 / a_coeffs_[0];
+  }
 
   // TODO(lucasw) this may be argument for keeping original Image messages around
   cv_bridge::CvImage cv_image;
@@ -136,9 +171,9 @@ void IIRImage::update(const ros::TimerEvent& e)
   const sensor_msgs::ImageConstPtr out_image(cv_image.toImageMsg());
   pub_.publish(out_image);
 
-  out_images_.push_front(out_image);
-  if (out_images_.size() > a_coeffs_.size())
-    out_images_.pop_back();
+  out_frames_.push_front(out_frame);
+  if (out_frames_.size() > a_coeffs_.size())
+    out_frames_.pop_back();
 
   // don't care if dirty_ would have become true again
   // had it been set false immediately after testing it.

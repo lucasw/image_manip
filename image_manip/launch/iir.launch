@@ -5,10 +5,11 @@
   <arg name="width" default="160"/>
   <arg name="height" default="120"/>
   <arg name="frame_rate" default="8"/>
+  <arg name="use_usb_cam" default="true"/>
 
   <node name="usb_cam" pkg="usb_cam" type="usb_cam_node"
       output="screen"
-      if="false">
+      if="$(arg use_usb_cam)">
     <param name="image_width" value="$(arg width)"/>
     <param name="image_height" value="$(arg height)"/>
     <param name="framerate" value="$(arg frame_rate)"/>
@@ -31,6 +32,7 @@
       a node to convert them if not.
       Right now these are all 64x48-->
 
+    <group unless="$(arg use_usb_cam)">
     <node pkg="image_publisher" type="image_publisher"
       name="load0"
       args="$(find vimjay)/data/clouds.png">
@@ -113,9 +115,19 @@
       <remap from="image_1" to="load1/resized"/>
       <remap from="image_2" to="load2/resized"/>
       <remap from="image_3" to="delayed"/>
+      <remap from="image_in" to="image_raw"/>
       <remap from="image_out" to="combined"/>
-      <param name="frame_rate" value="4"/>
     </node>
+    </group>  <!-- don't use_usb_cam -->
+    <group if="$(arg use_usb_cam)">
+      <node name="combine_image" pkg="image_manip" type="iir_image_node"
+          output="screen">
+        <param name="use_time_sequence" value="true"/>
+        <param name="frame_rate" value="$(arg frame_rate)"/>
+        <remap from="image_in" to="image_raw"/>
+        <remap from="image_out" to="combined"/>
+      </node>
+    </group>
     <group ns="image_raw">
     <!-- http://answers.ros.org/question/255970/how-to-deactivate-image_transport-plugins/ -->
     <rosparam param="disable_pub_plugins">

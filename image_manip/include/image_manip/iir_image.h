@@ -62,17 +62,16 @@ class IIRImage : public nodelet::Nodelet
 
   bool use_time_sequence_;
   std::vector<double> b_coeffs_;
-  // so far just a fir
   std::vector<double> a_coeffs_;
 
   ros::Timer timer_;
   void update(const ros::TimerEvent& e);
 
-  // TODO(lucasw) or a deque of sensor_msgs/Images?
   std::deque<sensor_msgs::ImageConstPtr> in_images_;
   // store converted images also, 1:1 with in_images_
   std::deque<cv_bridge::CvImageConstPtr> in_cv_images_;
-  std::deque<sensor_msgs::ImageConstPtr> out_images_;
+  // Don't need two deques here
+  std::deque<cv::Mat> out_frames_;
   bool dirty_;
 
   void imageCallback(const sensor_msgs::ImageConstPtr& msg);
