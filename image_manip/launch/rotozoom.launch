@@ -48,7 +48,7 @@
 
   </group>
   <node name="rqt_generic" pkg="rqt_gui" type="rqt_gui" 
-      args="--perspective-file $(find image_manip)/config/iir.perspective" 
+      args="--perspective-file $(find image_manip)/config/rotozoom.perspective" 
       output="screen"
       if="true">
   </node>

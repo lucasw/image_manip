@@ -114,17 +114,17 @@ void RotoZoom::update(const ros::TimerEvent& e)
   center.x = config_.center_x;
   center.y = config_.center_y;
   // TODO(lucasw) this has no effect
-  center.z = 1.0;  // config_.center_z;
+  center.z = 0.1;  // config_.center_z;
 
   float off_x = config_.off_x;
   float off_y = config_.off_y;
-  // float off_z = config_.off_z;
+  float off_z = 0.0;  // config_.off_z;
 
   if (nrm_px)
   {
     center.x = center.x * wd;  // + wd * 3 / 4;
     center.y = center.y * ht;  // + ht * 3 / 4;
-    center.z *= ht;
+    // center.z *= ht;
 
     off_x = off_x * wd + wd / 2;
     off_y = off_y * ht + ht / 2;
@@ -146,8 +146,7 @@ void RotoZoom::update(const ros::TimerEvent& e)
     cv::Mat offset = (cv::Mat_<float>(3, 4) <<
                       off_x, off_x, off_x, off_x,
                       off_y, off_y, off_y, off_y,
-                      0, 0, 0, 0);
-                      // off_z, off_z, off_z, off_z);
+                      off_z, off_z, off_z, off_z);
 
     // shift the image after rotation
     cv::Mat center_m = (cv::Mat_<float>(3, 4) <<
@@ -176,20 +175,20 @@ void RotoZoom::update(const ros::TimerEvent& e)
     // Transform into ideal coords
     // float fx = getSignal("fx");
     cv::Mat out_p = (in_p - offset).t() * rotx.t() * roty.t() * rotz.t() * scale;  // + center_m.t();
-
     out_roi = out_p(cv::Rect(0, 0, 2, 4)).clone();
 
     // this moves the image away from the 0 plane
     // TODO(lucasw) this has no effect
     const float z = config_.z;
+    const float z_scale = config_.z_scale;
     for (int i = 0; i < 4; i++)
     {
       for (int j = 0; j < 2; j++)
       {
-        // out_roi.at<float>(i, j) = z * out_p.at<float>(i, j) / (out_p.at<float>(i, 2) + z) +
-        out_roi.at<float>(i, j) = z * out_p.at<float>(i, j) +
+        // this makes the projection non-orthographic
+        const float out_p_z = out_p.at<float>(i, 2);
+        out_roi.at<float>(i, j) = out_p.at<float>(i, j) / (out_p_z * z_scale + z) +
             center_m.at<float>(j, i) + offset.at<float>(j, i);
-        // out_roi.at<float>(i, j) = out_p.at<float>(i, j) + center_m.at<float>(j, i) + offset.at<float>(j, i);
       }
     }
   }
@@ -200,7 +199,6 @@ void RotoZoom::update(const ros::TimerEvent& e)
   cv::warpPerspective(cv_ptr->image, out, transform,
                       cv_ptr->image.size(),
                       cv::INTER_NEAREST, config_.border);
-                      // getModeType(), getBorderType());
 
   cv_bridge::CvImage cv_image;
   cv_image.header.stamp = ros::Time::now();  // or reception time of original message?
