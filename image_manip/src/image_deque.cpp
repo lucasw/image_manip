@@ -63,7 +63,19 @@ void ImageDeque::callback(
   if (level & 4)
   {
     // TODO(lucasw) update config on every pubImage with latest index_?
-    index_ = config_.index;
+    if (config_.index != config.index)
+    {
+      if (images_.size() > 0)
+      {
+        config.index_fraction = static_cast<double>(config.index) /
+            static_cast<double>(images_.size());
+      }
+    }
+    else if (config_.index_fraction != config.index_fraction)
+    {
+      config.index = config.index_fraction * images_.size();
+    }
+    index_ = config.index;
   }
 
   dirty_ = true;
@@ -72,19 +84,22 @@ void ImageDeque::callback(
 
 void ImageDeque::maxSizeCallback(const std_msgs::UInt16::ConstPtr& msg)
 {
-  // TODO(lwalter) update dr, also keep dr updated with current size
+  // TODO(lucasw) update dr, also keep dr updated with current size
   config_.max_size = msg->data;
+  server_->updateConfig(config_);
 }
 
 void ImageDeque::singleCallback(const std_msgs::Bool::ConstPtr& msg)
 {
   capture_single_ = msg->data;
+  server_->updateConfig(config_);
 }
 
 void ImageDeque::continuousCallback(const std_msgs::Bool::ConstPtr& msg)
 {
   // TODO(lucasw) update dr
   config_.capture_continuous = msg->data;
+  server_->updateConfig(config_);
 }
 
 void ImageDeque::imageCallback(const sensor_msgs::ImageConstPtr& msg)
@@ -125,7 +140,8 @@ void ImageDeque::imageCallback(const sensor_msgs::ImageConstPtr& msg)
   trigger.data = true;
   captured_trigger_pub_.publish(trigger);
 
-  // dirty_ = true;
+  // TODO(lucasw) was this disabled earlier to work with the stop motion launch?
+  dirty_ = true;
 }
 
 void ImageDeque::indexCallback(const std_msgs::UInt16::ConstPtr& msg)
@@ -135,6 +151,9 @@ void ImageDeque::indexCallback(const std_msgs::UInt16::ConstPtr& msg)
   if (msg->data != index_)
     dirty_ = true;
   index_ = msg->data;
+  // TODO(lwalter) get rid of index_, just use config_.index
+  config_.index = index_;
+  server_->updateConfig(config_);
 
   if (config_.frame_rate == 0)
   {
@@ -149,7 +168,7 @@ void ImageDeque::update(const ros::TimerEvent& e)
   if (!dirty_)
     return;
 
-  ROS_INFO_STREAM(index_ << " " << images_.size());
+  ROS_DEBUG_STREAM(index_ << " " << images_.size());
   // TEMP code to show output of frames
   // TODO(lucasw) have index be controlled by topic
   if (index_ <= images_.size())
@@ -159,6 +178,7 @@ void ImageDeque::update(const ros::TimerEvent& e)
     else if (live_frame_)
       // preview the live frame at the end of the saved animation
       anim_pub_.publish(live_frame_);
+    // TODO(lwalter) else publish something else?
     // index_++;
   }
 

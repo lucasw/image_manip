@@ -96,7 +96,7 @@
       <param name="pixel_format" value="yuyv"/>
     </node>
 
-    <node pkg="nodelet" type="nodelet" 
+    <node pkg="nodelet" type="nodelet"
         name="deque0"
         args="load image_manip/ImageDeque manager"
         output="screen">
@@ -107,5 +107,12 @@
       <remap from="anim" to="select"/>
     </node>
   </group>  <!-- nodelet -->
+
+  <node name="rqt_generic" pkg="rqt_gui" type="rqt_gui"
+      args="--perspective-file $(find image_manip)/config/deque.perspective"
+      output="screen"
+      if="true">
+  </node>
+
 
 </launch>

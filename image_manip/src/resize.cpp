@@ -241,6 +241,7 @@ void Resize::onInit()
     &Resize::update, this);
   // force timer start by making old frame_rate different
   updateTimer(timer_, config_.frame_rate, config_.frame_rate - 1.0);
+
 }
 
 };  // namespace image_manip
