@@ -63,4 +63,14 @@ target_link_libraries(resize_node ${catkin_LIBRARIES})
 add_executable(roto_zoom_node src/roto_zoom_node.cpp)
 target_link_libraries(roto_zoom_node ${catkin_LIBRARIES})
 
-# TODO(lucasw) install
+
+install(TARGETS image_manip iir_image_node image_delay_node image_deque_node resize_node roto_zoom_node
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(FILES
+  nodelet_image_manip.xml
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
