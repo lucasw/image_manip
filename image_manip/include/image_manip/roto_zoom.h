@@ -47,6 +47,7 @@ class RotoZoom : public nodelet::Nodelet
   // image_transport::ImageTransport it_;
   ros::Publisher pub_;
   ros::Subscriber sub_;
+  ros::Subscriber background_sub_;
 
   image_manip::RotoZoomConfig config_;
   typedef dynamic_reconfigure::Server<image_manip::RotoZoomConfig> ReconfigureServer;
@@ -57,7 +58,9 @@ class RotoZoom : public nodelet::Nodelet
   boost::recursive_mutex dr_mutex_;
 
   std::deque<sensor_msgs::ImageConstPtr> images_;
+  sensor_msgs::ImageConstPtr background_image_;
   void imageCallback(const sensor_msgs::ImageConstPtr& msg);
+  void backgroundImageCallback(const sensor_msgs::ImageConstPtr& msg);
   bool dirty_;
   ros::Timer timer_;
   void update(const ros::TimerEvent& e);

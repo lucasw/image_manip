@@ -70,29 +70,62 @@ void RotoZoom::imageCallback(const sensor_msgs::ImageConstPtr& msg)
   }
 }
 
-void RotoZoom::update(const ros::TimerEvent& e)
+void RotoZoom::backgroundImageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
-  if (!dirty_)
-    return;
+  // need mutex around image_ uses
+  if (!background_image_)
+    ROS_INFO_STREAM("Using background image " << msg->width << " " << msg->height);
+  background_image_ = msg;
+  dirty_ = true;
 
-  if (images_.size() == 0)
-    return;
+  if (config_.frame_rate == 0)
+  {
+    ros::TimerEvent e;
+    update(e);
+  }
+}
 
-  const sensor_msgs::ImageConstPtr msg = images_[0];
-  images_.clear();
-  cv_bridge::CvImageConstPtr cv_ptr;
+bool imageToMat(const sensor_msgs::ImageConstPtr& msg, cv_bridge::CvImageConstPtr& cv_ptr)
+{
   try
   {
     // TBD why converting to BGR8
     cv_ptr = cv_bridge::toCvShare(msg, sensor_msgs::image_encodings::RGB8);
     //, "mono8"); // sensor_msgs::image_encodings::MONO8);
+    return true;
   }
   catch (cv_bridge::Exception& e)
   {
     ROS_ERROR("cv_bridge exception: %s", e.what());
+    return false;
+  }
+}
+
+void RotoZoom::update(const ros::TimerEvent& e)
+{
+  if (!dirty_)
+    return;
+
+  // make a copy now of the pointer, if it is overwritten later this should notice
+  // but probably still need mutex around this one line
+  sensor_msgs::ImageConstPtr background_image = background_image_;
+
+  if (images_.size() == 0)
+  {
+    if (!background_image)
+      return;
+
+    pub_.publish(background_image);
     return;
   }
 
+  const sensor_msgs::ImageConstPtr msg = images_[0];
+  images_.clear();
+  cv_bridge::CvImageConstPtr cv_ptr;
+  if (!imageToMat(msg, cv_ptr))
+    return;
+
+  // TODO(lucasw) should this be the background_image width and height if available?
   const float wd = msg->width;
   const float ht = msg->height;
   if ((wd == 0) || (ht == 0))
@@ -193,11 +226,22 @@ void RotoZoom::update(const ros::TimerEvent& e)
     }
   }
 
+  cv::Size dst_size = cv_ptr->image.size();
   cv::Mat out;
+  cv_bridge::CvImageConstPtr bg_cv_ptr;
+  if (background_image)
+  {
+    if (imageToMat(background_image, bg_cv_ptr))
+    {
+      out = bg_cv_ptr->image.clone();
+      dst_size = out.size();
+    }
+  }
+
   // TBD make inter_nearest changeable
   cv::Mat transform = cv::getPerspectiveTransform(in_roi, out_roi);
   cv::warpPerspective(cv_ptr->image, out, transform,
-                      cv_ptr->image.size(),
+                      dst_size,
                       cv::INTER_NEAREST, config_.border);
 
   cv_bridge::CvImage cv_image;
@@ -218,6 +262,9 @@ void RotoZoom::onInit()
 
   sub_ = getNodeHandle().subscribe("image_in", 5,
       &RotoZoom::imageCallback, this);
+
+  background_sub_ = getNodeHandle().subscribe("background_image", 5,
+      &RotoZoom::backgroundImageCallback, this);
 
   timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0),
     &RotoZoom::update, this);
