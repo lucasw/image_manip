@@ -7,12 +7,17 @@
 
   <node name="nodelet_manager" pkg="nodelet" type="nodelet" 
         args="manager" output="screen" 
-        ns="image_source" />
+        ns="image_source" >
+    <!-- this should be read in the private namespace, image_publisher needs to be fixed -->
+    <param name="publish_rate" value="0.5"/>
+  </node>
 
   <node pkg="nodelet" type="nodelet"
     name="image_source"
     args="load image_publisher/image_publisher image_source/nodelet_manager">
     <param name="filename" value="$(find image_manip)/data/lava.jpg"/>
+    <!-- this is where the param ought to be read, but image_publisher isn't
+      reading it from its private namespace -->
     <param name="publish_rate" value="0.5"/>
   </node>
 

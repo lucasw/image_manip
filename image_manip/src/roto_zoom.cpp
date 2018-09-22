@@ -53,6 +53,12 @@ void RotoZoom::callback(
   updateTimer(timer_, config.frame_rate, config_.frame_rate);
   config_ = config;
   dirty_ = true;
+
+  if (config_.frame_rate == 0)
+  {
+    ros::TimerEvent e;
+    update(e);
+  }
 }
 
 void RotoZoom::imageCallback(const sensor_msgs::ImageConstPtr& msg)
@@ -105,6 +111,7 @@ void RotoZoom::update(const ros::TimerEvent& e)
 {
   if (!dirty_)
     return;
+  dirty_ = false;
 
   // make a copy now of the pointer, if it is overwritten later this should notice
   // but probably still need mutex around this one line
@@ -120,7 +127,6 @@ void RotoZoom::update(const ros::TimerEvent& e)
   }
 
   const sensor_msgs::ImageConstPtr msg = images_[0];
-  images_.clear();
   cv_bridge::CvImageConstPtr cv_ptr;
   if (!imageToMat(msg, cv_ptr))
     return;
@@ -233,7 +239,7 @@ void RotoZoom::update(const ros::TimerEvent& e)
   {
     if (imageToMat(background_image, bg_cv_ptr))
     {
-      out = bg_cv_ptr->image.clone();
+      out = bg_cv_ptr->image;  // .clone();
       dst_size = out.size();
     }
   }
