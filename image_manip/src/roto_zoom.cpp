@@ -140,6 +140,14 @@ void RotoZoom::update(const ros::TimerEvent& e)
     return;
   }
 
+  float bg_wd = wd;
+  float bg_ht = ht;
+  if (background_image)
+  {
+    bg_wd = background_image->width;
+    bg_ht = background_image->height;
+  }
+
   float phi = config_.phi;
   float theta = config_.theta;
   float psi = config_.psi;
@@ -239,7 +247,9 @@ void RotoZoom::update(const ros::TimerEvent& e)
   {
     if (imageToMat(background_image, bg_cv_ptr))
     {
-      out = bg_cv_ptr->image;  // .clone();
+      // TODO(lucasw) could try to get smart and only clone if the input
+      // update rate is very slow- but that seems unreliable.
+      out = bg_cv_ptr->image.clone();
       dst_size = out.size();
     }
   }
