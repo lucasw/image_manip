@@ -109,10 +109,10 @@ void Convert::update(const ros::TimerEvent& e)
       (msg->encoding == "yuv422"));
 
   const int num_channels = sensor_msgs::image_encodings::numChannels(msg->encoding);
-  const int bit_depth = sensor_msgs::image_encodings::bitDepth(msg->encoding);
+  int bit_depth = sensor_msgs::image_encodings::bitDepth(msg->encoding);
+  std::string prefix;
   if (!abstract)
   {
-    std::string prefix;
     if (bit_depth == 8)
     {
       prefix = msg->encoding.substr(0, msg->encoding.size() - 1);
@@ -121,9 +121,15 @@ void Convert::update(const ros::TimerEvent& e)
     {
       prefix = msg->encoding.substr(0, msg->encoding.size() - 2);
     }
+    else if ((bit_depth == 32) || (bit_depth == 64))
+    {
+      // there are no rgba32 or bgr64 or mono32 etc. in ros yet,
+      // but will opencv do the right thing.
+      prefix = msg->encoding.substr(0, msg->encoding.size() - 2);
+    }
     else
     {
-      // there are no rgba32 or bgr64 or mono32 etc.
+      ROS_WARN_STREAM("unsupported bit_depth " << bit_depth);
       abstract = true;
     }
     enc << prefix;
@@ -141,6 +147,7 @@ void Convert::update(const ros::TimerEvent& e)
   {
     // TODO(lucasw) the number of channels don't matter here
     cv_ptr->image.convertTo(cv_image.image, CV_8UC1, config_.scale, config_.offset);
+    bit_depth = 8;
     if (abstract)
     {
       enc << "8UC" << num_channels;
@@ -153,6 +160,7 @@ void Convert::update(const ros::TimerEvent& e)
   else if (config_.dst_type == Convert_8SC)
   {
     cv_ptr->image.convertTo(cv_image.image, CV_8SC1, config_.scale, config_.offset);
+    bit_depth = 8;
     if (abstract)
     {
       enc << "8SC" << num_channels;
@@ -165,6 +173,7 @@ void Convert::update(const ros::TimerEvent& e)
   else if (config_.dst_type == Convert_16UC)
   {
     cv_ptr->image.convertTo(cv_image.image, CV_16UC1, config_.scale, config_.offset);
+    bit_depth = 16;
     if (abstract)
     {
       enc << "16UC" << num_channels;
@@ -177,6 +186,7 @@ void Convert::update(const ros::TimerEvent& e)
   else if (config_.dst_type == Convert_16SC)
   {
     cv_ptr->image.convertTo(cv_image.image, CV_16SC1, config_.scale, config_.offset);
+    bit_depth = 16;
     if (abstract)
     {
       enc << "16SC" << num_channels;
@@ -189,9 +199,10 @@ void Convert::update(const ros::TimerEvent& e)
   else if (config_.dst_type == Convert_32SC)
   {
     cv_ptr->image.convertTo(cv_image.image, CV_32FC1, config_.scale, config_.offset);
+    bit_depth = 32;
     // TODO(lucasw) until there is a rgba32 etc.
-    abstract = true;
-    enc.str("");
+    // abstract = true;
+    // enc.str("");
     if (abstract)
     {
       enc << "32SC" << num_channels;
@@ -204,9 +215,10 @@ void Convert::update(const ros::TimerEvent& e)
   else if (config_.dst_type == Convert_32FC)
   {
     cv_ptr->image.convertTo(cv_image.image, CV_32FC1, config_.scale, config_.offset);
+    bit_depth = 32;
     // TODO(lucasw) until there is a rgba32 etc.
-    abstract = true;
-    enc.str("");
+    // abstract = true;
+    // enc.str("");
     if (abstract)
     {
       enc << "32FC" << num_channels;
@@ -219,8 +231,9 @@ void Convert::update(const ros::TimerEvent& e)
   else if (config_.dst_type == Convert_64FC)
   {
     cv_ptr->image.convertTo(cv_image.image, CV_64FC1, config_.scale, config_.offset);
-    abstract = true;
-    enc.str("");
+    bit_depth = 64;
+    // abstract = true;
+    // enc.str("");
     if (abstract)
     {
       enc << "64FC" << num_channels;
@@ -230,6 +243,106 @@ void Convert::update(const ros::TimerEvent& e)
       enc << "64";
     }
   }
+
+  ////////////////////////////////////////////////////////////////////////////
+  // now convert color - TODO(lucasw) under some circumstances
+  // this should be done first?
+
+  // TODO(lucasw) enums can't have same names even if in different gen.enums?
+  if (!abstract && (config_.color != Convert_color_passthrough))
+  {
+    int code = -1;
+
+    if (config_.color == Convert_GRAY)
+    {
+      if (prefix == "bgr")
+        code = cv::COLOR_BGR2GRAY;
+      else if (prefix == "bgra")
+        code = cv::COLOR_BGRA2GRAY;
+      else if (prefix == "rgb")
+        code = cv::COLOR_RGB2GRAY;
+      else if (prefix == "rgba")
+        code = cv::COLOR_RGBA2GRAY;
+      // else TODO(lucasw)
+      if (code != -1)
+      {
+        enc.str("");
+        enc << "mono" << bit_depth;
+      }
+    }
+    else if (config_.color == Convert_BGR)
+    {
+      if (prefix == "mono")
+        code = cv::COLOR_GRAY2BGR;
+      else if (prefix == "rgb")
+        code = cv::COLOR_RGB2BGR;
+      else if (prefix == "rgba")
+        code = cv::COLOR_RGBA2BGR;
+      else if (prefix == "bgra")
+        code = cv::COLOR_BGRA2BGR;
+
+      if (code != -1)
+      {
+        enc.str("");
+        enc << "bgr" << bit_depth;
+      }
+    }
+    else if (config_.color == Convert_BGRA)
+    {
+      if (prefix == "mono")
+        code = cv::COLOR_GRAY2BGRA;
+      else if (prefix == "bgr")
+        code = cv::COLOR_BGR2BGRA;
+      else if (prefix == "rgb")
+        code = cv::COLOR_RGB2BGRA;
+      else if (prefix == "rgba")
+        code = cv::COLOR_RGBA2BGRA;
+
+      if (code != -1)
+      {
+        enc.str("");
+        enc << "bgra" << bit_depth;
+      }
+    }
+    else if (config_.color == Convert_RGB)
+    {
+      if (prefix == "mono")
+        code = cv::COLOR_GRAY2RGB;
+      else if (prefix == "bgr")
+        code = cv::COLOR_BGR2RGB;
+      else if (prefix == "bgra")
+        code = cv::COLOR_BGRA2RGB;
+      else if (prefix == "rgba")
+        code = cv::COLOR_RGBA2RGB;
+      if (code != -1)
+      {
+        enc.str("");
+        enc << "rgb" << bit_depth;
+      }
+    }
+    else if (config_.color == Convert_RGBA)
+    {
+      if (prefix == "mono")
+        code = cv::COLOR_GRAY2RGBA;
+      else if (prefix == "bgr")
+        code = cv::COLOR_BGR2RGBA;
+      else if (prefix == "bgra")
+        code = cv::COLOR_BGRA2RGBA;
+      else if (prefix == "rgb")
+        code = cv::COLOR_RGB2RGBA;
+      if (code != -1)
+      {
+        enc.str("");
+        enc << "rgba" << bit_depth;
+      }
+    }
+
+    if (code != -1)
+    {
+      cv::cvtColor(cv_image.image, cv_image.image, code);
+    }
+  }
+
   cv_image.header = cv_ptr->header;  // or reception time of original message?
   cv_image.encoding = enc.str();
   pub_.publish(cv_image.toImageMsg());
