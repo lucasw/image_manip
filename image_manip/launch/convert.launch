@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="frame_rate" default="8"/>
+  <arg name="use_image_publisher" default="true"/>
+
+  <group ns="image_manip">
+    <group ns="image_raw">
+    <!-- http://answers.ros.org/question/255970/how-to-deactivate-image_transport-plugins/ -->
+    <rosparam param="disable_pub_plugins">
+      - 'image_transport/compressed'
+      - 'image_transport/compressedDepth'
+      - 'image_transport/theora'
+    </rosparam>
+    </group>
+
+  <node pkg="nodelet" type="nodelet" name="manager" args="manager"
+      output="screen"/>
+
+  <node pkg="nodelet" type="nodelet"
+      name="image_source" output="screen"
+      args="load image_publisher/image_publisher manager"
+      if="$(arg use_image_publisher)">
+    <param name="filename" value="$(find image_manip)/data/lava.jpg"/>
+    <param name="publish_rate" value="0.5"/>
+  </node>
+
+  <node pkg="nodelet" type="nodelet"
+      name="convert0"
+      args="load image_manip/Convert manager"
+      output="screen">
+    <param name="frame_rate" value="$(arg frame_rate)"/>
+    <remap from="image_in" to="image_source/image_raw"/>
+    <remap from="image_out" to="converted"/>
+  </node>
+
+  </group>
+
+</launch>

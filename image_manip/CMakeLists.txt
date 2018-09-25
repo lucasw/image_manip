@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
 roslint_cpp()
 
 generate_dynamic_reconfigure_options(
+  cfg/Convert.cfg
   cfg/Delay.cfg
   cfg/IIRImage.cfg
   cfg/ImageDeque.cfg
@@ -34,6 +35,7 @@ include_directories(
 )
 
 add_library(image_manip
+  src/convert.cpp
   src/iir_image.cpp
   src/image_delay.cpp
   src/image_deque.cpp
@@ -47,6 +49,9 @@ target_link_libraries(image_manip ${catkin_LIBRARIES})
 if(catkin_EXPORTED_LIBRARIES)
   add_dependencies(image_manip ${catkin_EXPORTED_LIBRARIES})
 endif()
+
+add_executable(convert_node src/convert_node.cpp)
+target_link_libraries(convert_node ${catkin_LIBRARIES})
 
 add_executable(iir_image_node src/iir_image_node.cpp)
 target_link_libraries(iir_image_node ${catkin_LIBRARIES})

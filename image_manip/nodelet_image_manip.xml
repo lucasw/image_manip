@@ -1,4 +1,11 @@
 <library path="lib/libimage_manip">
+  <class name="image_manip/Convert"
+      type="image_manip::Convert"
+      base_class_type="nodelet::Nodelet">
+    <description>
+      Convert an image between any two valid Image types, also scale and shift
+    </description>
+  </class>
   <class name="image_manip/IIRImage"
       type="image_manip::IIRImage"
       base_class_type="nodelet::Nodelet">
