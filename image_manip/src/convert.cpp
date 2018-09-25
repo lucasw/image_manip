@@ -339,7 +339,14 @@ void Convert::update(const ros::TimerEvent& e)
 
     if (code != -1)
     {
-      cv::cvtColor(cv_image.image, cv_image.image, code);
+      try
+      {
+        cv::cvtColor(cv_image.image, cv_image.image, code);
+      }
+      catch (cv::Exception& ex)
+      {
+        ROS_ERROR_STREAM(msg->encoding << " " << prefix << " to " << enc.str() << " " << ex.what());
+      }
     }
   }
 
