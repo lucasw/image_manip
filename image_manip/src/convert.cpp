@@ -95,6 +95,21 @@ void Convert::update(const ros::TimerEvent& e)
   }
 
   cv_bridge::CvImage cv_image;
+  cv_image.header = cv_ptr->header;  // or reception time of original message?
+
+  if (config_.colormap > Convert_colormap_passthrough)
+  {
+    cv::Mat temp;
+    cv_ptr->image.convertTo(temp, CV_8UC1, config_.scale, config_.offset);
+    cv::applyColorMap(temp, cv_image.image, config_.colormap);
+
+    // TODO(lucasw) ignore the other config options for now
+    cv_image.encoding = "bgr8";  // enc.str();
+    pub_.publish(cv_image.toImageMsg());
+
+    dirty_ = false;
+    return;
+  }
 
   std::stringstream enc;
   // if the number of channels is 1, 3, or 4 and the type is 8 or 16 unsigned
@@ -137,6 +152,7 @@ void Convert::update(const ros::TimerEvent& e)
 
   // TODO(lucasw) can't handle yuv422 yet
 
+  int num_output_channels;
   if (config_.dst_type == image_manip::Convert_passthrough)
   {
     cv_ptr->image.convertTo(cv_image.image, -1, config_.scale, config_.offset);
@@ -150,7 +166,9 @@ void Convert::update(const ros::TimerEvent& e)
     bit_depth = 8;
     if (abstract)
     {
-      enc << "8UC" << num_channels;
+      // TODO(lucasw) the number of output channels needs to be appended to this
+      // at some point.
+      enc << "8UC";
     }
     else
     {
@@ -163,7 +181,7 @@ void Convert::update(const ros::TimerEvent& e)
     bit_depth = 8;
     if (abstract)
     {
-      enc << "8SC" << num_channels;
+      enc << "8SC";
     }
     else
     {
@@ -176,7 +194,7 @@ void Convert::update(const ros::TimerEvent& e)
     bit_depth = 16;
     if (abstract)
     {
-      enc << "16UC" << num_channels;
+      enc << "16UC";
     }
     else
     {
@@ -189,7 +207,7 @@ void Convert::update(const ros::TimerEvent& e)
     bit_depth = 16;
     if (abstract)
     {
-      enc << "16SC" << num_channels;
+      enc << "16SC";
     }
     else
     {
@@ -205,7 +223,7 @@ void Convert::update(const ros::TimerEvent& e)
     // enc.str("");
     if (abstract)
     {
-      enc << "32SC" << num_channels;
+      enc << "32SC";
     }
     else
     {
@@ -221,7 +239,7 @@ void Convert::update(const ros::TimerEvent& e)
     // enc.str("");
     if (abstract)
     {
-      enc << "32FC" << num_channels;
+      enc << "32FC";
     }
     else
     {
@@ -231,12 +249,12 @@ void Convert::update(const ros::TimerEvent& e)
   else if (config_.dst_type == Convert_64FC)
   {
     cv_ptr->image.convertTo(cv_image.image, CV_64FC1, config_.scale, config_.offset);
-    bit_depth = 64;
+    // bit_depth = 64;
     // abstract = true;
-    // enc.str("");
+    enc.str("");
     if (abstract)
     {
-      enc << "64FC" << num_channels;
+      enc << "64FC";
     }
     else
     {
@@ -339,18 +357,44 @@ void Convert::update(const ros::TimerEvent& e)
 
     if (code != -1)
     {
-      try
-      {
-        cv::cvtColor(cv_image.image, cv_image.image, code);
-      }
-      catch (cv::Exception& ex)
-      {
-        ROS_ERROR_STREAM(msg->encoding << " " << prefix << " to " << enc.str() << " " << ex.what());
-      }
+      cv::cvtColor(cv_image.image, cv_image.image, code);
     }
   }
 
-  cv_image.header = cv_ptr->header;  // or reception time of original message?
+  {
+    // TODO(lucasw) consolidate code below
+    // special cases
+    if (config_.dst_type == Convert_32FC)
+    {
+      if (config_.color == Convert_color_passthrough)
+      {
+        enc.str("");
+        enc << "32FC" << num_channels;
+      }
+      else if (config_.color == Convert_GRAY)
+        enc.str("32FC1");
+      else if ((config_.color == Convert_BGR) || (config_.color == Convert_RGB))
+        enc.str("32FC3");
+      else if ((config_.color == Convert_BGRA) || (config_.color == Convert_BGRA))
+        enc.str("32FC4");
+    }
+    else if (config_.dst_type == Convert_64FC)
+    {
+      if (config_.color == Convert_color_passthrough)
+      {
+        enc.str("");
+        enc << "64FC" << num_channels;
+      }
+      else if (config_.color == Convert_GRAY)
+        enc.str("64FC1");
+      else if ((config_.color == Convert_BGR) || (config_.color == Convert_RGB))
+        enc.str("64FC3");
+      if ((config_.color == Convert_BGRA) || (config_.color == Convert_BGRA))
+        enc.str("64FC4");
+    }
+
+  }
+
   cv_image.encoding = enc.str();
   pub_.publish(cv_image.toImageMsg());
 

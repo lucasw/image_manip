@@ -4,13 +4,15 @@
   <arg name="use_image_publisher" default="true"/>
 
   <group ns="image_manip">
-    <group ns="image_raw">
+    <group ns="image_source">
+      <group ns="image_raw">
     <!-- http://answers.ros.org/question/255970/how-to-deactivate-image_transport-plugins/ -->
     <rosparam param="disable_pub_plugins">
       - 'image_transport/compressed'
       - 'image_transport/compressedDepth'
       - 'image_transport/theora'
     </rosparam>
+      </group>
     </group>
 
   <node pkg="nodelet" type="nodelet" name="manager" args="manager"
@@ -33,6 +35,20 @@
     <remap from="image_out" to="converted"/>
   </node>
 
+  <node pkg="nodelet" type="nodelet"
+      name="convert1"
+      args="load image_manip/Convert manager"
+      output="screen">
+    <param name="frame_rate" value="$(arg frame_rate)"/>
+    <remap from="image_in" to="converted"/>
+    <remap from="image_out" to="converted2"/>
+  </node>
+
   </group>
 
+  <node name="rqt_convert" pkg="rqt_gui" type="rqt_gui"
+      args="--perspective-file $(find image_manip)/config/convert.perspective"
+      output="screen"
+      if="true">
+  </node>
 </launch>
