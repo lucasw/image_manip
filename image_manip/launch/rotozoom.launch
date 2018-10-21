@@ -4,6 +4,7 @@
   <arg name="width" default="640"/>
   <arg name="height" default="480"/>
   <arg name="frame_rate" default="10"/>
+  <arg name="use_rqt" default="true"/>
 
   <node name="nodelet_manager" pkg="nodelet" type="nodelet" 
         args="manager" output="screen" 
@@ -74,7 +75,7 @@
   <node name="rqt_generic" pkg="rqt_gui" type="rqt_gui" 
       args="--perspective-file $(find image_manip)/config/rotozoom.perspective" 
       output="screen"
-      if="true">
+      if="$(arg use_rqt)">
   </node>
 
 </launch>
