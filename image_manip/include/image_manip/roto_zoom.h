@@ -59,7 +59,8 @@ class RotoZoom : public nodelet::Nodelet
 
   std::deque<sensor_msgs::ImageConstPtr> images_;
   sensor_msgs::ImageConstPtr background_image_;
-  sensor_msgs::ImagePtr output_image_;
+  // this contains no image data, just a reference for the height, width, etc.
+  sensor_msgs::Image output_image_info_;
   void imageCallback(const sensor_msgs::ImageConstPtr& msg);
   void backgroundImageCallback(const sensor_msgs::ImageConstPtr& msg);
   bool dirty_;

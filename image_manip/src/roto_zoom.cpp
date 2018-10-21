@@ -91,24 +91,6 @@ void RotoZoom::backgroundImageCallback(const sensor_msgs::ImageConstPtr& msg)
   }
 }
 
-// have to hang on to source pointer for as long as output cv_ptr is going to be used
-bool imageToMat(const sensor_msgs::ImageConstPtr& msg,
-    cv_bridge::CvImageConstPtr& cv_ptr,
-    const std::string encoding = "")
-{
-  try
-  {
-    // TBD why converting to BGR8
-    cv_ptr = cv_bridge::toCvShare(msg, encoding);
-    return true;
-  }
-  catch (cv_bridge::Exception& e)
-  {
-    ROS_ERROR("cv_bridge exception: %s", e.what());
-    return false;
-  }
-}
-
 void RotoZoom::update(const ros::TimerEvent& e)
 {
   if (!dirty_)
@@ -242,6 +224,7 @@ void RotoZoom::update(const ros::TimerEvent& e)
     }
   }
 
+  sensor_msgs::ImagePtr output_image;
   cv::Size dst_size;
   // TODO(lucasw) create a ImagePtr with memory allocated for dst_size,
   // then use toCvShare to get the cv::Mat version of it and operate
@@ -255,59 +238,64 @@ void RotoZoom::update(const ros::TimerEvent& e)
       ROS_ERROR_STREAM("background image couldn't be converted to mat pointer");
       return;
     }
-    if (!output_image_ ||
-        // TODO(lucasw) make macro for this - or something already exists?
-        (output_image_->width != background_image->width) ||
-        (output_image_->height != background_image->height) ||
-        (output_image_->encoding != background_image->encoding) ||
-        (output_image_->step != background_image->step) ||
-        (output_image_->is_bigendian != background_image->is_bigendian) ||
-        (output_image_->data.size() != background_image->data.size()))
-    {
-      cv_bridge::CvImage cv_image;
-      cv_image.image = bg_cv_ptr->image;
-      cv_image.encoding = background_image->encoding;
-      // this copies the image, don't need to clone above
-      // Can't avoid this image copy, otherwise the next iteration
-      // will have a background image that already has a warped foreground image
-      // on it.
-      // TODO(lucasw) could try to get smart and only clone if the input
-      // update rate is very slow- but that seems unreliable.
-      output_image_ = cv_image.toImageMsg();
-      // TODO(lucasw) is there a more direct Image copy than above?
-      // output_image_.reset(new sensor_msgs::ImagePtr(background_image));
-    }
-    else
-    {
-      // all the other width/height/encoding are the same, just copy vector
-      output_image_->data = background_image->data;
-    }
-    dst_size = cv::Size(output_image_->width, output_image_->height);
+    cv_bridge::CvImage cv_image;
+    cv_image.image = bg_cv_ptr->image;
+    cv_image.encoding = background_image->encoding;
+    // this copies the image, don't need to clone above
+    // Can't avoid this image copy, otherwise the next iteration
+    // will have a background image that already has a warped foreground image
+    // on it.
+    // TODO(lucasw) could try to get smart and only clone if the input
+    // update rate is very slow- but that seems unreliable.
+    output_image = cv_image.toImageMsg();
+    // TODO(lucasw) is there a more direct Image copy than above?
+    // output_image_.reset(new sensor_msgs::ImagePtr(background_image));
+    dst_size = cv::Size(output_image->width, output_image->height);
   }
   else
   {
     // No background image, need to allocate output image that is same size
     // as input image.
-    dst_size = cv_ptr->image.size();
-    cv_bridge::CvImage cv_image;
-    cv_image.image = cv::Mat(dst_size, cv_ptr->image.type(), cv::Scalar::all(0));
-    cv_image.encoding = msg->encoding;
-    output_image_ = cv_image.toImageMsg();
+    if (!sameImageType(output_image_info_, msg))
+    {
+      dst_size = cv_ptr->image.size();
+      cv_bridge::CvImage cv_image;
+      // TODO(lucasw) this is creating a mat then immediately copying it-
+      // would rather create the image just once,
+      // but probably need to construct Image on own?
+      cv_image.image = cv::Mat(dst_size, cv_ptr->image.type(), cv::Scalar::all(0));
+      cv_image.encoding = msg->encoding;
+      output_image = cv_image.toImageMsg();
+    }
+    else
+    {
+      // TODO(lucasw) what is copied here
+      *output_image = output_image_info_;
+      // TODO(lucasw) zero out data
+    }
   }
 
-  const int type = cv_bridge::getCvType(output_image_->encoding);
+  const int type = cv_bridge::getCvType(output_image->encoding);
   // this is safe because the size and type won't be changed
-  cv::Mat out = cv::Mat(dst_size, type, static_cast<uchar*>(&output_image_->data[0]),
-      output_image_->step);
+  cv::Mat out = cv::Mat(dst_size, type, static_cast<uchar*>(&output_image->data[0]),
+      output_image->step);
   // TBD make inter_nearest changeable
   cv::Mat transform = cv::getPerspectiveTransform(in_roi, out_roi);
   cv::warpPerspective(cv_ptr->image, out, transform,
                       dst_size,
                       cv::INTER_NEAREST, config_.border);
 
-  output_image_->header.stamp = ros::Time::now();  // or reception time of original message?
-  output_image_->header.frame_id = msg->header.frame_id;
-  pub_.publish(output_image_);
+  output_image->header.stamp = ros::Time::now();  // or reception time of original message?
+  output_image->header.frame_id = msg->header.frame_id;
+
+  output_image_info_.height = output_image->height;
+  output_image_info_.width = output_image->width;
+  output_image_info_.encoding = output_image->encoding;
+  output_image_info_.is_bigendian = output_image->is_bigendian;
+  output_image_info_.step = output_image->step;
+  output_image_info_.data.resize(output_image->data.size());
+
+  pub_.publish(output_image);
 }
 
 void RotoZoom::onInit()

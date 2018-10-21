@@ -56,4 +56,43 @@ void updateTimer(ros::Timer& timer, const float frame_rate,
   timer.setPeriod(ros::Duration(period), reset);
 }
 
+// have to hang on to source pointer for as long as output cv_ptr is going to be used
+bool imageToMat(const sensor_msgs::ImageConstPtr& msg,
+    cv_bridge::CvImageConstPtr& cv_ptr,
+    const std::string encoding)
+{
+  try
+  {
+    // TBD why converting to BGR8
+    cv_ptr = cv_bridge::toCvShare(msg, encoding);
+    return true;
+  }
+  catch (cv_bridge::Exception& e)
+  {
+    ROS_ERROR("cv_bridge exception: %s", e.what());
+    return false;
+  }
+}
+
+bool sameImageType(const sensor_msgs::Image& im1, const sensor_msgs::ImageConstPtr& im2)
+{
+  // TODO(lucasw) use below
+  return ((im1.width != im2->width) ||
+          (im1.height != im2->height) ||
+          (im1.encoding != im2->encoding) ||
+          (im1.step != im2->step) ||
+          (im1.is_bigendian != im2->is_bigendian) ||
+          (im1.data.size() != im2->data.size()));
+}
+
+bool sameImageType(const sensor_msgs::ImageConstPtr& im1, const sensor_msgs::ImageConstPtr& im2)
+{
+  return ((im1->width != im2->width) ||
+          (im1->height != im2->height) ||
+          (im1->encoding != im2->encoding) ||
+          (im1->step != im2->step) ||
+          (im1->is_bigendian != im2->is_bigendian) ||
+          (im1->data.size() != im2->data.size()));
+}
+
 }  // namespace image_manip

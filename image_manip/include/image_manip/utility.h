@@ -31,14 +31,23 @@
 #ifndef IMAGE_MANIP_UTILITY_H
 #define IMAGE_MANIP_UTILITY_H
 
+#include <cv_bridge/cv_bridge.h>
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
+#include <sensor_msgs/Image.h>
 
 namespace image_manip
 {
-
   void updateTimer(ros::Timer& timer, const float frame_rate,
       const float old_frame_rate);
+
+  // this just catches exceptions
+  bool imageToMat(const sensor_msgs::ImageConstPtr& msg,
+      cv_bridge::CvImageConstPtr& cv_ptr,
+      const std::string encoding = "");
+
+  bool sameImageType(const sensor_msgs::Image& im1, const sensor_msgs::ImageConstPtr& im2);
+  bool sameImageType(const sensor_msgs::ImageConstPtr& im1, const sensor_msgs::ImageConstPtr& im2);
 }
 
 #endif  // IMAGE_MANIP_UTILITY_H
