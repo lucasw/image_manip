@@ -185,8 +185,8 @@ void Resize::update(const ros::TimerEvent& e)
     return;
 
   // TODO(lucasw) optionally convert encoding to dr type or keep same
-  const std::string encoding = sensor_msgs::image_encodings::RGB8;
   const sensor_msgs::ImageConstPtr msg = images_[0];
+  const std::string encoding = msg->encoding;
   images_.clear();
   cv_bridge::CvImageConstPtr cv_ptr;
   try
