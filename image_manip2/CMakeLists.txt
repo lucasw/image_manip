@@ -16,7 +16,9 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # find dependencies
+find_package(OpenCV REQUIRED)
 find_package(ament_cmake REQUIRED)
+find_package(cv_bridge REQUIRED)
 find_package(example_interfaces REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rcutils)
@@ -28,6 +30,9 @@ add_executable(image_publisher src/image_publisher.cpp)
 ament_target_dependencies(image_publisher
   "rclcpp"
   "sensor_msgs")
+target_link_libraries(image_publisher
+  ${OpenCV_LIBRARIES}
+  ${cv_bridge_LIBRARIES})
 install(TARGETS image_publisher DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)

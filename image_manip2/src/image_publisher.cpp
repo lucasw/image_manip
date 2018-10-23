@@ -13,8 +13,12 @@
 // limitations under the License.
 
 #include <chrono>
-#include "rclcpp/rclcpp.hpp"
-#include "sensor_msgs/msg/image.hpp"
+#include <cv_bridge/cv_bridge.h>
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/image_encodings.hpp>
+#include <sensor_msgs/msg/image.hpp>
 
 using namespace std::chrono_literals;
 
@@ -24,10 +28,21 @@ using namespace std::chrono_literals;
 class ImagePublisher : public rclcpp::Node
 {
 public:
-  ImagePublisher()
-  : Node("image_publisher")
+  ImagePublisher(const std::string image_name="")
+  : Node("image_publisher"), image_name_(image_name)
   {
-    publisher_ = this->create_publisher<sensor_msgs::msg::Image>("image_raw");
+    image_ = cv::imread(image_name, CV_LOAD_IMAGE_GRAYSCALE);
+    if (image_.empty()) {
+      image_ = cv::Mat(100, 100, CV_8UC1);
+    }
+    cv_bridge::CvImage cvi;
+    cvi.encoding = sensor_msgs::image_encodings::MONO8;
+    cvi.image = image_;
+    msg_ = cvi.toImageMsg();
+    // message.header.stamp = TBD
+    msg_->header.frame_id = frame_id_;
+
+    publisher_ = this->create_publisher<sensor_msgs::msg::Image>("image_raw3");
     timer_ = this->create_wall_timer(
       500ms, std::bind(&ImagePublisher::timer_callback, this));
   }
@@ -35,17 +50,12 @@ public:
 private:
   void timer_callback()
   {
-    auto msg = sensor_msgs::msg::Image();
-    // message.header.stamp = TBD
-    msg.header.frame_id = frame_id_;
-    msg.width = 100;
-    msg.height = 100;
-    msg.encoding = "mono8";
-    msg.step = msg.width;
-    msg.data.resize(msg.width * msg.height);
-    publisher_->publish(msg);
+    publisher_->publish(msg_);
   }
 
+  std::string image_name_;
+  sensor_msgs::msg::Image::SharedPtr msg_;
+  cv::Mat image_;
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr publisher_;
   // TODO(lucasw) use topic or parameter to set this
@@ -55,7 +65,22 @@ private:
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<ImagePublisher>());
+
+  // Force flush of the stdout buffer.
+  // This ensures a correct sync of all prints
+  // even when executed simultaneously within a launch file.
+  setvbuf(stdout, NULL, _IONBF, BUFSIZ);
+
+  for (size_t i = 0; i < argc; ++i) {
+    std::cout << argv[i] << "\n";
+  }
+  std::string image_name;
+  if (argc > 1) {
+    image_name = argv[1];
+    std::cout << "using image " << image_name << "\n";
+    // RCLCPP_INFO(node->get_logger(), "Subscribing to topic '%s'", topic.c_str());
+  }
+  rclcpp::spin(std::make_shared<ImagePublisher>(image_name));
   rclcpp::shutdown();
   return 0;
 }
