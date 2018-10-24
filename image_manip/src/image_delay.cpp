@@ -31,6 +31,7 @@
 #include <cv_bridge/cv_bridge.h>
 #include <image_manip/image_delay.h>
 #include <image_manip/utility.h>
+#include <image_manip/utility_ros.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
 

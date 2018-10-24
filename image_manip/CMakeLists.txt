@@ -41,7 +41,8 @@ add_library(image_manip
   src/image_deque.cpp
   src/resize.cpp
   src/roto_zoom.cpp
-  src/utility.cpp)
+  src/utility.cpp
+  src/utility_ros.cpp)
 add_dependencies(image_manip ${PROJECT_NAME}_gencfg)
 target_link_libraries(image_manip ${catkin_LIBRARIES})
 
