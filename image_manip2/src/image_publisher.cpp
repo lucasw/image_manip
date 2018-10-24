@@ -22,9 +22,6 @@
 
 using namespace std::chrono_literals;
 
-/* This example creates a subclass of Node and uses std::bind() to register a
- * member function as a callback from the timer. */
-
 class ImagePublisher : public rclcpp::Node
 {
 public:
@@ -39,10 +36,9 @@ public:
     cvi.encoding = sensor_msgs::image_encodings::MONO8;
     cvi.image = image_;
     msg_ = cvi.toImageMsg();
-    // message.header.stamp = TBD
     msg_->header.frame_id = frame_id_;
 
-    publisher_ = this->create_publisher<sensor_msgs::msg::Image>("image_raw3");
+    publisher_ = this->create_publisher<sensor_msgs::msg::Image>("image_raw");
     timer_ = this->create_wall_timer(
       500ms, std::bind(&ImagePublisher::timer_callback, this));
   }
@@ -50,6 +46,7 @@ public:
 private:
   void timer_callback()
   {
+    // message.header.stamp = TBD
     publisher_->publish(msg_);
   }
 

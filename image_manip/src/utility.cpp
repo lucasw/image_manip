@@ -30,6 +30,7 @@
 
 
 #include <image_manip/utility.h>
+#include <opencv2/imgproc.hpp>
 
 namespace image_manip
 {
@@ -96,7 +97,7 @@ bool resizeFixAspectFill(const cv::Mat& tmp0, cv::Mat& tmp1,
   const float aspect_0 = static_cast<float>(tmp0.cols) / static_cast<float>(tmp0.rows);
   const float aspect_1 = static_cast<float>(tmp1.cols) / static_cast<float>(tmp1.rows);
 
-  const cv::Size src_sz = tmp0.size();
+  // const cv::Size src_sz = tmp0.size();
 
   // this is the subimage that has to fit within tmp1
   // it will be shrunk down as necessary and border offset
@@ -140,6 +141,7 @@ bool resizeFixAspectFill(const cv::Mat& tmp0, cv::Mat& tmp1,
   return true;
 }
 
+#if 0
 // TODO(lucasw) move to utility library
 void updateTimer(ros::Timer& timer, const float frame_rate,
     const float old_frame_rate)
@@ -200,5 +202,6 @@ bool sameImageType(const sensor_msgs::ImageConstPtr& im1, const sensor_msgs::Ima
           (im1->is_bigendian != im2->is_bigendian) ||
           (im1->data.size() != im2->data.size()));
 }
+#endif
 
 }  // namespace image_manip

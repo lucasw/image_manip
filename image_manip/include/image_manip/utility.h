@@ -31,10 +31,7 @@
 #ifndef IMAGE_MANIP_UTILITY_H
 #define IMAGE_MANIP_UTILITY_H
 
-#include <cv_bridge/cv_bridge.h>
-#include <nodelet/nodelet.h>
-#include <ros/ros.h>
-#include <sensor_msgs/Image.h>
+#include <opencv2/core.hpp>
 
 namespace image_manip
 {
@@ -46,6 +43,8 @@ namespace image_manip
   bool resizeFixAspectFill(const cv::Mat& tmp0, cv::Mat& tmp1,
       const cv::Size sz, const int mode);
 
+  // TODO(lucasw) put in separate utility for ros1 only
+  #if 0
   void updateTimer(ros::Timer& timer, const float frame_rate,
       const float old_frame_rate);
 
@@ -56,6 +55,7 @@ namespace image_manip
 
   bool sameImageType(const sensor_msgs::Image& im1, const sensor_msgs::ImageConstPtr& im2);
   bool sameImageType(const sensor_msgs::ImageConstPtr& im1, const sensor_msgs::ImageConstPtr& im2);
+  #endif
 }
 
 #endif  // IMAGE_MANIP_UTILITY_H

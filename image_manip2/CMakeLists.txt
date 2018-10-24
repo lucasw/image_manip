@@ -35,6 +35,20 @@ target_link_libraries(image_publisher
   ${cv_bridge_LIBRARIES})
 install(TARGETS image_publisher DESTINATION lib/${PROJECT_NAME})
 
+add_executable(resize src/resize.cpp ../image_manip/src/utility.cpp)
+ament_target_dependencies(resize
+  "cv_bridge"
+  "rclcpp"
+  "sensor_msgs"
+  "std_msgs")
+include_directories(resize
+  ${OpenCV_INCLUDE_DIRECTORIES}
+  ../image_manip/include)
+target_link_libraries(resize
+  ${OpenCV_LIBRARIES}
+  ${cv_bridge_LIBRARIES})
+install(TARGETS resize DESTINATION lib/${PROJECT_NAME})
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
