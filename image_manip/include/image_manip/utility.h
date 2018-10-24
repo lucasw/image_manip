@@ -38,6 +38,14 @@
 
 namespace image_manip
 {
+  // TODO(lucasw) need a float parameter to scale between these two options
+  // leave black borders
+  bool resizeFixAspect(const cv::Mat& tmp0, cv::Mat& tmp1,
+      const cv::Size sz, const int mode);
+  // fill to edges, chop off edges as necessary
+  bool resizeFixAspectFill(const cv::Mat& tmp0, cv::Mat& tmp1,
+      const cv::Size sz, const int mode);
+
   void updateTimer(ros::Timer& timer, const float frame_rate,
       const float old_frame_rate);
 
