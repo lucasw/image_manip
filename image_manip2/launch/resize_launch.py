@@ -12,17 +12,21 @@ def generate_launch_description():
     image_pub = launch_ros.actions.Node(
             package='image_manip2', node_executable='image_publisher', output='screen',
             arguments=[image_manip_dir + "/data/mosaic.jpg"])
+    resize = launch_ros.actions.Node(
+            package='image_manip2', node_executable='resize', output='screen',
+            # arguments=[image_manip_dir + "/data/mosaic.jpg"])
+            remappings=[('image_in', 'image_raw')])
     showimage = launch_ros.actions.Node(
             package='image_tools', node_executable='showimage', output='screen',
             remappings=[('image', 'image_raw')])
+    showimage_resized = launch_ros.actions.Node(
+            package='image_tools', node_executable='showimage', output='screen',
+            remappings=[('image', 'image_out')])
             # arguments=["-t image_raw"])
 
     return launch.LaunchDescription([
         image_pub,
         showimage,
-        # launch.actions.RegisterEventHandler(
-        #     event_handler=launch.event_handlers.OnProcessExit(
-        #         target_action=client,
-        #         on_exit=[launch.actions.EmitEvent(event=launch.events.Shutdown())],
-        #     )),
+        resize,
+        showimage_resized,
     ])
