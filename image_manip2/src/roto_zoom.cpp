@@ -42,37 +42,37 @@ using std::placeholders::_1;
 namespace image_manip
 {
 
-class Resize : public rclcpp::Node
+class RotoZoom : public rclcpp::Node
 {
 public:
-Resize() : Node("resize")
+RotoZoom() : Node("rotozoom")
 {
   dirty_ = false;
   pub_ = this->create_publisher<sensor_msgs::msg::Image>("image_out");
 
   image_sub_ = this->create_subscription<sensor_msgs::msg::Image>("image_in",
-      std::bind(&image_manip::Resize::imageCallback, this, _1));
-  width_sub_ = this->create_subscription<std_msgs::msg::UInt16>("width",
-      std::bind(&image_manip::Resize::widthCallback, this, _1));
-  height_sub_ = this->create_subscription<std_msgs::msg::UInt16>("height",
-      std::bind(&image_manip::Resize::heightCallback, this, _1));
+      std::bind(&image_manip::RotoZoom::imageCallback, this, _1));
+  phi_sub_ = this->create_subscription<std_msgs::msg::Float32>("phi",
+      std::bind(&image_manip::RotoZoom::phiCallback, this, _1));
+  theta_sub_ = this->create_subscription<std_msgs::msg::Float32>("theta",
+      std::bind(&image_manip::RotoZoom::thetaCallback, this, _1));
 
   // timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0),
   //  &update, this);
 }
 
-~Resize()
+~RotoZoom()
 {
 }
 
-void widthCallback(const std_msgs::msg::UInt16::SharedPtr msg)
+void phiCallback(const std_msgs::msg::Float32::SharedPtr msg)
 {
-  width_ = msg->data;
+  phi_ = msg->data;
 }
 
-void heightCallback(const std_msgs::msg::UInt16::SharedPtr msg)
+void thetaCallback(const std_msgs::msg::Float32::SharedPtr msg)
 {
-  height_ = msg->data;
+  theta_ = msg->data;
 }
 
 void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
@@ -96,8 +96,17 @@ void update()
   if (!msg_)
     return;
 
-  // TODO(lucasw) optionally convert encoding to dr type or keep same
   const sensor_msgs::msg::Image::SharedPtr msg = msg_;
+
+  const float wd = msg->width;
+  const float ht = msg->height;
+  if ((wd == 0) || (ht == 0))
+  {
+    // ROS_ERROR_STREAM(wd << " " << ht);
+    return;
+  }
+
+  // TODO(lucasw) optionally convert encoding to dr type or keep same
   const std::string encoding = msg->encoding;
   cv_bridge::CvImageConstPtr cv_ptr;
   try
@@ -113,29 +122,30 @@ void update()
   }
 
   cv_bridge::CvImage cv_image;
-  const cv::Size size(width_, height_);
 
-  try {
-  if (mode_ == 0)
-  {
-    resizeFixAspect(cv_ptr->image, cv_image.image, size, interpolate_mode_);
-  }
-  if (mode_ == 1)
-  {
-    resizeFixAspectFill(cv_ptr->image, cv_image.image, size, interpolate_mode_);
-  }
-  if (mode_ == 2)
-  {
-    cv::resize(cv_ptr->image, cv_image.image, size, 0, 0, interpolate_mode_);
-  }
-  }
-  catch (cv::Exception& ex)
-  {
-    return;
-  }
+  cv::Size dst_size = cv_ptr->image.size();
+  const float phi = phi_;
+  const float theta = theta_;
+  const float psi = 0.0;
+  cv::Point3f center;
+  float off_x;
+  float off_y;
+  const float z = 1.0;
+  const float z_scale = 0.005;
+
+  cv::Mat transform;
+  getPerspectiveTransform(wd, ht, phi, theta, psi, off_x, off_y,
+      z, z_scale, center, transform);
+
+  const int border = cv::BORDER_TRANSPARENT;
+  cv::warpPerspective(cv_ptr->image, cv_image.image, transform,
+                      dst_size,
+                      cv::INTER_NEAREST, border);
 
   cv_image.header = cv_ptr->header;  // or reception time of original message?
   cv_image.encoding = encoding;
+  // TODO(lucasw) the image copy in toImageMsg ought to be avoided
+  // (assuming it does copy as it does in ros1)
   pub_->publish(cv_image.toImageMsg());
 
   dirty_ = false;
@@ -144,16 +154,17 @@ void update()
 private:
   // sensor_msgs::
   bool dirty_ = false;
-  int width_ = 100;
-  int height_ = 100;
+  float phi_ = 100;
+  int theta_ = 100;
   float frame_rate_ = 0.0;
   unsigned int mode_ = 0;
-  int interpolate_mode_ = cv::INTER_NEAREST;
   sensor_msgs::msg::Image::SharedPtr msg_;
+  sensor_msgs::msg::Image::SharedPtr background_image_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
-  rclcpp::Subscription<std_msgs::msg::UInt16>::SharedPtr width_sub_;
-  rclcpp::Subscription<std_msgs::msg::UInt16>::SharedPtr height_sub_;
+  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr background_sub_;
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr phi_sub_;
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr theta_sub_;
 };
 }  // namespace image_manip
 
@@ -166,7 +177,7 @@ int main(int argc, char * argv[])
   // This ensures a correct sync of all prints
   // even when executed simultaneously within a launch file.
   setvbuf(stdout, NULL, _IONBF, BUFSIZ);
-  rclcpp::spin(std::make_shared<image_manip::Resize>());
+  rclcpp::spin(std::make_shared<image_manip::RotoZoom>());
   rclcpp::shutdown();
   return 0;
 }

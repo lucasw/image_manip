@@ -49,6 +49,20 @@ target_link_libraries(resize
   ${cv_bridge_LIBRARIES})
 install(TARGETS resize DESTINATION lib/${PROJECT_NAME})
 
+add_executable(roto_zoom src/roto_zoom.cpp ../image_manip/src/utility.cpp)
+ament_target_dependencies(roto_zoom
+  "cv_bridge"
+  "rclcpp"
+  "sensor_msgs"
+  "std_msgs")
+include_directories(roto_zoom
+  ${OpenCV_INCLUDE_DIRECTORIES}
+  ../image_manip/include)
+target_link_libraries(roto_zoom
+  ${OpenCV_LIBRARIES}
+  ${cv_bridge_LIBRARIES})
+install(TARGETS roto_zoom DESTINATION lib/${PROJECT_NAME})
+
 install(DIRECTORY data DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 
