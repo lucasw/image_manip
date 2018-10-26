@@ -141,4 +141,88 @@ bool resizeFixAspectFill(const cv::Mat& tmp0, cv::Mat& tmp1,
   return true;
 }
 
+void getPerspectiveTransform(const float& wd, const float& ht,
+    const float& phi, const float& theta, const float& psi,
+    float& off_x, float& off_y, const float& z, const float& z_scale,
+    cv::Point3f& center, cv::Mat& transform)
+{
+  float scale = 1.0;
+  const bool nrm_px = true;
+  // TODO(lucasw) this has no effect
+  center.z = 0.1;  // config_.center_z;
+  float off_z = 0.0;  // config_.off_z;
+
+  if (nrm_px)
+  {
+    center.x = center.x * wd;  // + wd * 3 / 4;
+    center.y = center.y * ht;  // + ht * 3 / 4;
+    // center.z *= ht;
+
+    off_x = off_x * wd + wd / 2;
+    off_y = off_y * ht + ht / 2;
+    // off_z *= ht;
+  }
+
+  cv::Mat in_p = (cv::Mat_<float>(3, 4) <<
+                  0, wd, wd, 0,
+                  0, 0,  ht, ht,
+                  0, 0, 0, 0);
+
+  cv::Mat in_roi = in_p.t()(cv::Rect(0, 0, 2, 4));  // ).clone();
+  in_roi = in_roi.clone();
+
+  cv::Mat out_roi;
+  {
+    // This implements a standard rotozoom
+    // move the image prior to rotation
+    cv::Mat offset = (cv::Mat_<float>(3, 4) <<
+                      off_x, off_x, off_x, off_x,
+                      off_y, off_y, off_y, off_y,
+                      off_z, off_z, off_z, off_z);
+
+    // shift the image after rotation
+    cv::Mat center_m = (cv::Mat_<float>(3, 4) <<
+                        center.x, center.x, center.x, center.x,
+                        center.y, center.y, center.y, center.y,
+                        center.z, center.z, center.z, center.z);
+
+    // Rotation matrices
+    cv::Mat rotz = (cv::Mat_<float>(3, 3) <<
+                    cos(phi), -sin(phi), 0,
+                    sin(phi),  cos(phi), 0,
+                    0, 0, 1);
+
+    cv::Mat roty = (cv::Mat_<float>(3, 3) <<
+                    cos(theta),  0, sin(theta),
+                    0, 1, 0,
+                    -sin(theta), 0, cos(theta));
+
+    cv::Mat rotx = (cv::Mat_<float>(3, 3) <<
+                    1,  0,        0,
+                    0,  cos(psi), sin(psi),
+                    0, -sin(psi), cos(psi));
+
+    // TBD reformat the matrices so all the transposes aren't necessary
+
+    // Transform into ideal coords
+    // float fx = getSignal("fx");
+    cv::Mat out_p = (in_p - offset).t() * rotx.t() * roty.t() * rotz.t() * scale;  // + center_m.t();
+    out_roi = out_p(cv::Rect(0, 0, 2, 4)).clone();
+
+    // this moves the image away from the 0 plane
+    // TODO(lucasw) this has no effect
+    for (int i = 0; i < 4; i++)
+    {
+      for (int j = 0; j < 2; j++)
+      {
+        // this makes the projection non-orthographic
+        const float out_p_z = out_p.at<float>(i, 2);
+        out_roi.at<float>(i, j) = out_p.at<float>(i, j) / (out_p_z * z_scale + z) +
+            center_m.at<float>(j, i) + offset.at<float>(j, i);
+      }
+    }
+  }
+  transform = cv::getPerspectiveTransform(in_roi, out_roi);
+}
+
 }  // namespace image_manip

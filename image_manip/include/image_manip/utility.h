@@ -42,6 +42,11 @@ namespace image_manip
   // fill to edges, chop off edges as necessary
   bool resizeFixAspectFill(const cv::Mat& tmp0, cv::Mat& tmp1,
       const cv::Size sz, const int mode);
+
+  void getPerspectiveTransform(const float& wd, const float& ht,
+      const float& phi, const float& theta, const float& psi,
+      float& off_x, float& off_y, const float& z, const float& z_scale,
+      cv::Point3f& center, cv::Mat& transform);
 }
 
 #endif  // IMAGE_MANIP_UTILITY_H
