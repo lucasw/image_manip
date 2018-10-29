@@ -67,12 +67,28 @@ RotoZoom() : Node("rotozoom")
 
 void phiCallback(const std_msgs::msg::Float32::SharedPtr msg)
 {
-  phi_ = msg->data;
+  if (phi_ != msg->data) {
+    phi_ = msg->data;
+    dirty_ = true;
+
+    if (frame_rate_ == 0)
+    {
+      update();
+    }
+  }
 }
 
 void thetaCallback(const std_msgs::msg::Float32::SharedPtr msg)
 {
-  theta_ = msg->data;
+  if (theta_ != msg->data) {
+    theta_ = msg->data;
+    dirty_ = true;
+
+    if (frame_rate_ == 0)
+    {
+      update();
+    }
+  }
 }
 
 void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
@@ -127,17 +143,21 @@ void update()
   const float phi = phi_;
   const float theta = theta_;
   const float psi = 0.0;
-  cv::Point3f center;
-  float off_x;
-  float off_y;
+  cv::Point3f center(0, 0, 0);
+  float off_x = 0;
+  float off_y = 0;
   const float z = 1.0;
   const float z_scale = 0.005;
 
   cv::Mat transform;
+  // std::cout << "phi theta psi " << phi << " " << theta << " " << psi << "\n";
   getPerspectiveTransform(wd, ht, phi, theta, psi, off_x, off_y,
       z, z_scale, center, transform);
 
-  const int border = cv::BORDER_TRANSPARENT;
+  const int border = cv::BORDER_REFLECT;  // TRANSPARENT;
+  // TODO(lucasw) don't waste time creating an empty image if the border
+  // type will overwrite it all anyhow
+  cv_image.image = cv::Mat(dst_size, cv_ptr->image.type(), cv::Scalar::all(0));
   cv::warpPerspective(cv_ptr->image, cv_image.image, transform,
                       dst_size,
                       cv::INTER_NEAREST, border);
@@ -154,8 +174,8 @@ void update()
 private:
   // sensor_msgs::
   bool dirty_ = false;
-  float phi_ = 100;
-  int theta_ = 100;
+  float phi_ = 0.0;
+  float theta_ = 0.0;
   float frame_rate_ = 0.0;
   unsigned int mode_ = 0;
   sensor_msgs::msg::Image::SharedPtr msg_;
