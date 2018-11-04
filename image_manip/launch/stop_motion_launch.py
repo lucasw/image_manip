@@ -44,30 +44,26 @@ def generate_launch_description():
             )
         )
         yaml.dump(data, outfile, default_flow_style=False)
-    usb_cam_dir = get_package_share_directory('usb_cam')
-    print('usb_cam dir ' + usb_cam_dir)
     launches.append(launch_ros.actions.Node(
         package='usb_cam', node_executable='usb_cam_node', output='screen',
         arguments=["__params:=" + usb_cam_params]
         ))
 
+    v4l2ucp_params = prefix + "v4l2ucp.yaml"
+    with open(v4l2ucp_params, 'w') as outfile:
+        print("opened " + v4l2ucp_params + " for yaml writing")
+        data = dict(v4l2ucp = dict(ros__parameters = dict(
+                        device = device,
+                        )))
+        yaml.dump(data, outfile, default_flow_style=False)
+
+    launches.append(launch_ros.actions.Node(
+                package='v4l2ucp', node_executable='v4l2ucp_node', output='screen',
+                arguments=["__params:=" + v4l2ucp_params]
+                ))
+
     if False:
-      v4l2ucp_params = prefix + "v4l2ucp.yaml"
-      with open(v4l2ucp_params) as outfile:
-        data = dict(
-          v4l2ucp = dict(
-            ros__parameters = dict(
-                device = device,
-              )
-            )
-          )
-
       image_manip_params = prefix + "image_manip.yaml"
-      launches.append(launch_ros.actions.Node(
-              package='v4l2ucp', node_executable='v4l2ucp_node', output='screen',
-              arguments=["__params:=" + v4l2ucp_params]
-              ))
-
       image_manip_dir = get_package_share_directory('image_manip')
       print('image_manip dir ' + image_manip_dir)
       launches.append(launch_ros.actions.Node(
