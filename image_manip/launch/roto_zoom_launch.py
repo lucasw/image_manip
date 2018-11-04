@@ -7,14 +7,14 @@ from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
-    image_manip_dir = get_package_share_directory('image_manip2')
-    print('image_manip2 dir ' + image_manip_dir)
+    image_manip_dir = get_package_share_directory('image_manip')
+    print('image_manip dir ' + image_manip_dir)
     launches = []
     launches.append(launch_ros.actions.Node(
-            package='image_manip2', node_executable='image_publisher', output='screen',
+            package='image_manip', node_executable='image_publisher', output='screen',
             arguments=[image_manip_dir + "/data/mosaic.jpg"]))
     launches.append(launch_ros.actions.Node(
-            package='image_manip2', node_executable='roto_zoom', output='screen',
+            package='image_manip', node_executable='roto_zoom', output='screen',
             # arguments=[image_manip_dir + "/data/mosaic.jpg"])
             remappings=[('image_in', 'image_raw')]))
     # TODO(lucasw) get this from argument

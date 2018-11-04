@@ -29,60 +29,76 @@
  */
 
 #include <cv_bridge/cv_bridge.h>
-#include <image_manip/resize.h>
 #include <image_manip/utility.h>
-#include <image_manip/utility_ros.h>
-#include <sensor_msgs/Image.h>
-#include <sensor_msgs/image_encodings.h>
+#include <opencv2/imgproc.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/image_encodings.hpp>
+#include <std_msgs/msg/float32.hpp>
+#include <std_msgs/msg/u_int16.hpp>
 #include <string>
-
+using std::placeholders::_1;
 
 namespace image_manip
 {
 
-Resize::Resize()
+class Resize : public rclcpp::Node
+{
+public:
+Resize() : Node("resize")
+{
+  dirty_ = false;
+  pub_ = this->create_publisher<sensor_msgs::msg::Image>("image_out");
+
+  image_sub_ = this->create_subscription<sensor_msgs::msg::Image>("image_in",
+      std::bind(&image_manip::Resize::imageCallback, this, _1));
+  width_sub_ = this->create_subscription<std_msgs::msg::UInt16>("width",
+      std::bind(&image_manip::Resize::widthCallback, this, _1));
+  height_sub_ = this->create_subscription<std_msgs::msg::UInt16>("height",
+      std::bind(&image_manip::Resize::heightCallback, this, _1));
+
+  // timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0),
+  //  &update, this);
+}
+
+~Resize()
 {
 }
 
-Resize::~Resize()
+void widthCallback(const std_msgs::msg::UInt16::SharedPtr msg)
 {
+  width_ = msg->data;
 }
 
-void Resize::callback(
-    image_manip::ResizeConfig& config,
-    uint32_t level)
+void heightCallback(const std_msgs::msg::UInt16::SharedPtr msg)
 {
-  updateTimer(timer_, config.frame_rate, config_.frame_rate);
-  config_ = config;
+  height_ = msg->data;
 }
 
-void Resize::imageCallback(const sensor_msgs::ImageConstPtr& msg)
+void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
 {
-  images_.push_back(msg);
+  msg_ = msg;
   dirty_ = true;
 
   // negative frame_rate is a disable
   // TODO(lucasw) or should that be the other way around?
-  if (config_.frame_rate == 0)
+  if (frame_rate_ == 0)
   {
-    ros::TimerEvent e;
-    e.current_real = ros::Time::now();
-    update(e);
+    update();
   }
 }
 
-void Resize::update(const ros::TimerEvent& e)
+void update()
 {
   if (!dirty_)
     return;
 
-  if (images_.size() == 0)
+  if (!msg_)
     return;
 
   // TODO(lucasw) optionally convert encoding to dr type or keep same
-  const sensor_msgs::ImageConstPtr msg = images_[0];
+  const sensor_msgs::msg::Image::SharedPtr msg = msg_;
   const std::string encoding = msg->encoding;
-  images_.clear();
   cv_bridge::CvImageConstPtr cv_ptr;
   try
   {
@@ -92,54 +108,66 @@ void Resize::update(const ros::TimerEvent& e)
   }
   catch (cv_bridge::Exception& e)
   {
-    ROS_ERROR("cv_bridge exception: %s", e.what());
+    RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
     return;
   }
 
   cv_bridge::CvImage cv_image;
-  const cv::Size size(config_.width, config_.height);
+  const cv::Size size(width_, height_);
 
-  if (config_.mode == 0)
+  try {
+  if (mode_ == 0)
   {
-    resizeFixAspect(cv_ptr->image, cv_image.image, size, config_.interpolate_mode);
+    resizeFixAspect(cv_ptr->image, cv_image.image, size, interpolate_mode_);
   }
-  if (config_.mode == 1)
+  if (mode_ == 1)
   {
-    resizeFixAspectFill(cv_ptr->image, cv_image.image, size, config_.interpolate_mode);
+    resizeFixAspectFill(cv_ptr->image, cv_image.image, size, interpolate_mode_);
   }
-  if (config_.mode == 2)
+  if (mode_ == 2)
   {
-    cv::resize(cv_ptr->image, cv_image.image, size, 0, 0, config_.interpolate_mode);
+    cv::resize(cv_ptr->image, cv_image.image, size, 0, 0, interpolate_mode_);
+  }
+  }
+  catch (cv::Exception& ex)
+  {
+    return;
   }
 
   cv_image.header = cv_ptr->header;  // or reception time of original message?
   cv_image.encoding = encoding;
-  pub_.publish(cv_image.toImageMsg());
+  pub_->publish(cv_image.toImageMsg());
 
   dirty_ = false;
 }
 
-void Resize::onInit()
+private:
+  // sensor_msgs::
+  bool dirty_ = false;
+  int width_ = 100;
+  int height_ = 100;
+  float frame_rate_ = 0.0;
+  unsigned int mode_ = 0;
+  int interpolate_mode_ = cv::INTER_NEAREST;
+  sensor_msgs::msg::Image::SharedPtr msg_;
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
+  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
+  rclcpp::Subscription<std_msgs::msg::UInt16>::SharedPtr width_sub_;
+  rclcpp::Subscription<std_msgs::msg::UInt16>::SharedPtr height_sub_;
+};
+}  // namespace image_manip
+
+
+int main(int argc, char * argv[])
 {
-  dirty_ = false;
-  pub_ = getNodeHandle().advertise<sensor_msgs::Image>("image_out", 5);
+  rclcpp::init(argc, argv);
 
-  server_.reset(new ReconfigureServer(dr_mutex_, getPrivateNodeHandle()));
-  dynamic_reconfigure::Server<image_manip::ResizeConfig>::CallbackType cbt =
-      boost::bind(&Resize::callback, this, _1, _2);
-  server_->setCallback(cbt);
-
-  sub_ = getNodeHandle().subscribe("image_in", 5,
-      &Resize::imageCallback, this);
-
-  timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0),
-    &Resize::update, this);
-  // force timer start by making old frame_rate different
-  updateTimer(timer_, config_.frame_rate, config_.frame_rate - 1.0);
-
+  // Force flush of the stdout buffer.
+  // This ensures a correct sync of all prints
+  // even when executed simultaneously within a launch file.
+  setvbuf(stdout, NULL, _IONBF, BUFSIZ);
+  rclcpp::spin(std::make_shared<image_manip::Resize>());
+  rclcpp::shutdown();
+  return 0;
 }
 
-};  // namespace image_manip
-
-#include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(image_manip::Resize, nodelet::Nodelet)

@@ -1,82 +1,80 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5)
 project(image_manip)
 
-find_package(catkin REQUIRED COMPONENTS
-  cv_bridge
-  dynamic_reconfigure
-  image_transport
-  nodelet
-  roscpp
-  roslint
-  sensor_msgs
-  std_msgs
-)
-
-roslint_cpp()
-
-generate_dynamic_reconfigure_options(
-  cfg/Convert.cfg
-  cfg/Delay.cfg
-  cfg/IIRImage.cfg
-  cfg/ImageDeque.cfg
-  cfg/Resize.cfg
-  cfg/RotoZoom.cfg
-)
-
-catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES image_manip
-  CATKIN_DEPENDS nodelet roscpp sensor_msgs std_msgs
-)
-
-include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
-)
-
-add_library(image_manip
-  src/convert.cpp
-  src/iir_image.cpp
-  src/image_delay.cpp
-  src/image_deque.cpp
-  src/resize.cpp
-  src/roto_zoom.cpp
-  src/utility.cpp
-  src/utility_ros.cpp)
-add_dependencies(image_manip ${PROJECT_NAME}_gencfg)
-target_link_libraries(image_manip ${catkin_LIBRARIES})
-
-# TODO(lucasw) is this needed?
-if(catkin_EXPORTED_LIBRARIES)
-  add_dependencies(image_manip ${catkin_EXPORTED_LIBRARIES})
+# Default to C99
+if(NOT CMAKE_C_STANDARD)
+  set(CMAKE_C_STANDARD 99)
 endif()
 
-add_executable(convert_node src/convert_node.cpp)
-target_link_libraries(convert_node ${catkin_LIBRARIES})
+# Default to C++14
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 14)
+endif()
 
-add_executable(iir_image_node src/iir_image_node.cpp)
-target_link_libraries(iir_image_node ${catkin_LIBRARIES})
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 
-add_executable(image_delay_node src/image_delay_node.cpp)
-target_link_libraries(image_delay_node ${catkin_LIBRARIES})
+# find dependencies
+find_package(OpenCV REQUIRED)
+find_package(ament_cmake REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(example_interfaces REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rcutils)
+find_package(rmw REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 
-add_executable(image_deque_node src/image_deque_node.cpp)
-target_link_libraries(image_deque_node ${catkin_LIBRARIES})
+add_executable(image_publisher src/image_publisher.cpp)
+ament_target_dependencies(image_publisher
+  "rclcpp"
+  "sensor_msgs")
+target_link_libraries(image_publisher
+  ${OpenCV_LIBRARIES}
+  ${cv_bridge_LIBRARIES})
+install(TARGETS image_publisher DESTINATION lib/${PROJECT_NAME})
 
-add_executable(resize_node src/resize_node.cpp)
-target_link_libraries(resize_node ${catkin_LIBRARIES})
+add_executable(resize src/resize.cpp src/utility.cpp)
+ament_target_dependencies(resize
+  "cv_bridge"
+  "rclcpp"
+  "sensor_msgs"
+  "std_msgs")
+include_directories(resize
+  ${OpenCV_INCLUDE_DIRECTORIES}
+  include)
+target_link_libraries(resize
+  ${OpenCV_LIBRARIES}
+  ${cv_bridge_LIBRARIES})
+install(TARGETS resize DESTINATION lib/${PROJECT_NAME})
 
-add_executable(roto_zoom_node src/roto_zoom_node.cpp)
-target_link_libraries(roto_zoom_node ${catkin_LIBRARIES})
+add_executable(roto_zoom src/roto_zoom.cpp src/utility.cpp)
+ament_target_dependencies(roto_zoom
+  "cv_bridge"
+  "rclcpp"
+  "sensor_msgs"
+  "std_msgs")
+include_directories(roto_zoom
+  ${OpenCV_INCLUDE_DIRECTORIES}
+  include)
+target_link_libraries(roto_zoom
+  ${OpenCV_LIBRARIES}
+  ${cv_bridge_LIBRARIES})
+install(TARGETS roto_zoom DESTINATION lib/${PROJECT_NAME})
 
+install(DIRECTORY data DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 
-install(TARGETS image_manip iir_image_node image_delay_node image_deque_node resize_node roto_zoom_node
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  # the following line skips the linter which checks for copyrights
+  # remove the line when a copyright and license is present in all source files
+  set(ament_cmake_copyright_FOUND TRUE)
+  # the following line skips cpplint (only works in a git repo)
+  # remove the line when this package is a git repo
+  set(ament_cmake_cpplint_FOUND TRUE)
+  ament_lint_auto_find_test_dependencies()
+endif()
 
-install(FILES
-  nodelet_image_manip.xml
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
+ament_package()

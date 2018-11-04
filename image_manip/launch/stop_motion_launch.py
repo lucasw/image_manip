@@ -68,13 +68,13 @@ def generate_launch_description():
               arguments=["__params:=" + v4l2ucp_params]
               ))
 
-      image_manip_dir = get_package_share_directory('image_manip2')
-      print('image_manip2 dir ' + image_manip_dir)
+      image_manip_dir = get_package_share_directory('image_manip')
+      print('image_manip dir ' + image_manip_dir)
       launches.append(launch_ros.actions.Node(
-              package='image_manip2', node_executable='image_publisher', output='screen',
+              package='image_manip', node_executable='image_publisher', output='screen',
               arguments=[image_manip_dir + "/data/mosaic.jpg"]))
       launches.append(launch_ros.actions.Node(
-              package='image_manip2', node_executable='resize', output='screen',
+              package='image_manip', node_executable='resize', output='screen',
               arguments=["__params:=" + image_manip_params],
               remappings=[('image_in', 'image_raw')]))
 

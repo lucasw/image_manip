@@ -29,94 +29,91 @@
  */
 
 #include <cv_bridge/cv_bridge.h>
-#include <image_manip/roto_zoom.h>
 #include <image_manip/utility.h>
-#include <image_manip/utility_ros.h>
-#include <sensor_msgs/Image.h>
-#include <sensor_msgs/image_encodings.h>
-
+#include <opencv2/imgproc.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/image_encodings.hpp>
+#include <std_msgs/msg/float32.hpp>
+#include <std_msgs/msg/u_int16.hpp>
+#include <string>
+using std::placeholders::_1;
 
 namespace image_manip
 {
 
-RotoZoom::RotoZoom()
+class RotoZoom : public rclcpp::Node
+{
+public:
+RotoZoom() : Node("rotozoom")
+{
+  dirty_ = false;
+  pub_ = this->create_publisher<sensor_msgs::msg::Image>("image_out");
+
+  image_sub_ = this->create_subscription<sensor_msgs::msg::Image>("image_in",
+      std::bind(&image_manip::RotoZoom::imageCallback, this, _1));
+  phi_sub_ = this->create_subscription<std_msgs::msg::Float32>("phi",
+      std::bind(&image_manip::RotoZoom::phiCallback, this, _1));
+  theta_sub_ = this->create_subscription<std_msgs::msg::Float32>("theta",
+      std::bind(&image_manip::RotoZoom::thetaCallback, this, _1));
+
+  // timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0),
+  //  &update, this);
+}
+
+~RotoZoom()
 {
 }
 
-RotoZoom::~RotoZoom()
+void phiCallback(const std_msgs::msg::Float32::SharedPtr msg)
 {
-}
+  if (phi_ != msg->data) {
+    phi_ = msg->data;
+    dirty_ = true;
 
-void RotoZoom::callback(
-    image_manip::RotoZoomConfig& config,
-    uint32_t level)
-{
-  updateTimer(timer_, config.frame_rate, config_.frame_rate);
-  config_ = config;
-  dirty_ = true;
-
-  if (config_.frame_rate == 0)
-  {
-    ros::TimerEvent e;
-    update(e);
+    if (frame_rate_ == 0)
+    {
+      update();
+    }
   }
 }
 
-void RotoZoom::imageCallback(const sensor_msgs::ImageConstPtr& msg)
+void thetaCallback(const std_msgs::msg::Float32::SharedPtr msg)
 {
-  // need mutex around image_ uses
-  images_.push_back(msg);
-  while (images_.size() > 1)
-    images_.pop_front();
-  dirty_ = true;
+  if (theta_ != msg->data) {
+    theta_ = msg->data;
+    dirty_ = true;
 
-  if (config_.frame_rate == 0)
-  {
-    ros::TimerEvent e;
-    update(e);
+    if (frame_rate_ == 0)
+    {
+      update();
+    }
   }
 }
 
-void RotoZoom::backgroundImageCallback(const sensor_msgs::ImageConstPtr& msg)
+void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
 {
-  // need mutex around image_ uses
-  if (!background_image_)
-    ROS_INFO_STREAM("Using background image " << msg->width << " " << msg->height);
-  background_image_ = msg;
+  msg_ = msg;
   dirty_ = true;
 
-  if (config_.frame_rate == 0)
+  // negative frame_rate is a disable
+  // TODO(lucasw) or should that be the other way around?
+  if (frame_rate_ == 0)
   {
-    ros::TimerEvent e;
-    update(e);
+    update();
   }
 }
 
-void RotoZoom::update(const ros::TimerEvent& e)
+void update()
 {
   if (!dirty_)
     return;
-  dirty_ = false;
 
-  // make a copy now of the pointer, if it is overwritten later this should notice
-  // but probably still need mutex around this one line
-  sensor_msgs::ImageConstPtr background_image = background_image_;
-
-  if (images_.size() == 0)
-  {
-    if (!background_image)
-      return;
-
-    pub_.publish(background_image);
-    return;
-  }
-
-  const sensor_msgs::ImageConstPtr msg = images_[0];
-  cv_bridge::CvImageConstPtr cv_ptr;
-  if (!imageToMat(msg, cv_ptr))
+  if (!msg_)
     return;
 
-  // TODO(lucasw) should this be the background_image width and height if available?
+  const sensor_msgs::msg::Image::SharedPtr msg = msg_;
+
   const float wd = msg->width;
   const float ht = msg->height;
   if ((wd == 0) || (ht == 0))
@@ -125,128 +122,83 @@ void RotoZoom::update(const ros::TimerEvent& e)
     return;
   }
 
-  float bg_wd = wd;
-  float bg_ht = ht;
-  if (background_image)
+  // TODO(lucasw) optionally convert encoding to dr type or keep same
+  const std::string encoding = msg->encoding;
+  cv_bridge::CvImageConstPtr cv_ptr;
+  try
   {
-    bg_wd = background_image->width;
-    bg_ht = background_image->height;
+    // TBD why converting to BGR8
+    cv_ptr = cv_bridge::toCvShare(msg, encoding);
+    //, "mono8"); // sensor_msgs::image_encodings::MONO8);
+  }
+  catch (cv_bridge::Exception& e)
+  {
+    RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
+    return;
   }
 
-  float phi = config_.phi;
-  float theta = config_.theta;
-  float psi = config_.psi;
+  cv_bridge::CvImage cv_image;
 
-  cv::Point3f center;
-  // TODO(lucasw) this doesn't work as expected
-  center.x = config_.center_x;
-  center.y = config_.center_y;
-
-  float off_x = config_.off_x;
-  float off_y = config_.off_y;
-
-  const float z = config_.z;
-  const float z_scale = config_.z_scale;
+  cv::Size dst_size = cv_ptr->image.size();
+  const float phi = phi_;
+  const float theta = theta_;
+  const float psi = 0.0;
+  cv::Point3f center(0, 0, 0);
+  float off_x = 0;
+  float off_y = 0;
+  const float z = 1.0;
+  const float z_scale = 0.005;
 
   cv::Mat transform;
+  // std::cout << "phi theta psi " << phi << " " << theta << " " << psi << "\n";
   getPerspectiveTransform(wd, ht, phi, theta, psi, off_x, off_y,
       z, z_scale, center, transform);
 
-  sensor_msgs::ImagePtr output_image;
-  cv::Size dst_size;
-  // TODO(lucasw) create a ImagePtr with memory allocated for dst_size,
-  // then use toCvShare to get the cv::Mat version of it and operate
-  // warpPerspective on it to avoid teh toImageMsg() image copy.
-  cv_bridge::CvImageConstPtr bg_cv_ptr;
-  if (background_image)
-  {
-    // change background image encoding to foreground image
-    if (!imageToMat(background_image, bg_cv_ptr, msg->encoding))
-    {
-      ROS_ERROR_STREAM("background image couldn't be converted to mat pointer");
-      return;
-    }
-    cv_bridge::CvImage cv_image;
-    cv_image.image = bg_cv_ptr->image;
-    cv_image.encoding = background_image->encoding;
-    // this copies the image, don't need to clone above
-    // Can't avoid this image copy, otherwise the next iteration
-    // will have a background image that already has a warped foreground image
-    // on it.
-    // TODO(lucasw) could try to get smart and only clone if the input
-    // update rate is very slow- but that seems unreliable.
-    output_image = cv_image.toImageMsg();
-    // TODO(lucasw) is there a more direct Image copy than above?
-    // output_image_.reset(new sensor_msgs::ImagePtr(background_image));
-    dst_size = cv::Size(output_image->width, output_image->height);
-  }
-  else
-  {
-    // No background image, need to allocate output image that is same size
-    // as input image.
-    if (!sameImageType(output_image_info_, msg))
-    {
-      dst_size = cv_ptr->image.size();
-      cv_bridge::CvImage cv_image;
-      // TODO(lucasw) this is creating a mat then immediately copying it-
-      // would rather create the image just once,
-      // but probably need to construct Image on own?
-      cv_image.image = cv::Mat(dst_size, cv_ptr->image.type(), cv::Scalar::all(0));
-      cv_image.encoding = msg->encoding;
-      output_image = cv_image.toImageMsg();
-    }
-    else
-    {
-      // TODO(lucasw) what is copied here
-      *output_image = output_image_info_;
-      // TODO(lucasw) zero out data
-    }
-  }
-
-  const int type = cv_bridge::getCvType(output_image->encoding);
-  // this is safe because the size and type won't be changed
-  cv::Mat out = cv::Mat(dst_size, type, static_cast<uchar*>(&output_image->data[0]),
-      output_image->step);
-  // TBD make inter_nearest changeable
-  cv::warpPerspective(cv_ptr->image, out, transform,
+  const int border = cv::BORDER_REFLECT;  // TRANSPARENT;
+  // TODO(lucasw) don't waste time creating an empty image if the border
+  // type will overwrite it all anyhow
+  cv_image.image = cv::Mat(dst_size, cv_ptr->image.type(), cv::Scalar::all(0));
+  cv::warpPerspective(cv_ptr->image, cv_image.image, transform,
                       dst_size,
-                      cv::INTER_NEAREST, config_.border);
+                      cv::INTER_NEAREST, border);
 
-  output_image->header.stamp = ros::Time::now();  // or reception time of original message?
-  output_image->header.frame_id = msg->header.frame_id;
+  cv_image.header = cv_ptr->header;  // or reception time of original message?
+  cv_image.encoding = encoding;
+  // TODO(lucasw) the image copy in toImageMsg ought to be avoided
+  // (assuming it does copy as it does in ros1)
+  pub_->publish(cv_image.toImageMsg());
 
-  output_image_info_.height = output_image->height;
-  output_image_info_.width = output_image->width;
-  output_image_info_.encoding = output_image->encoding;
-  output_image_info_.is_bigendian = output_image->is_bigendian;
-  output_image_info_.step = output_image->step;
-  output_image_info_.data.resize(output_image->data.size());
-
-  pub_.publish(output_image);
+  dirty_ = false;
 }
 
-void RotoZoom::onInit()
+private:
+  // sensor_msgs::
+  bool dirty_ = false;
+  float phi_ = 0.0;
+  float theta_ = 0.0;
+  float frame_rate_ = 0.0;
+  unsigned int mode_ = 0;
+  sensor_msgs::msg::Image::SharedPtr msg_;
+  sensor_msgs::msg::Image::SharedPtr background_image_;
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
+  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
+  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr background_sub_;
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr phi_sub_;
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr theta_sub_;
+};
+}  // namespace image_manip
+
+
+int main(int argc, char * argv[])
 {
-  pub_ = getNodeHandle().advertise<sensor_msgs::Image>("image_out", 5);
+  rclcpp::init(argc, argv);
 
-  server_.reset(new ReconfigureServer(dr_mutex_, getPrivateNodeHandle()));
-  dynamic_reconfigure::Server<image_manip::RotoZoomConfig>::CallbackType cbt =
-      boost::bind(&RotoZoom::callback, this, _1, _2);
-  server_->setCallback(cbt);
-
-  sub_ = getNodeHandle().subscribe("image_in", 5,
-      &RotoZoom::imageCallback, this);
-
-  background_sub_ = getNodeHandle().subscribe("background_image", 5,
-      &RotoZoom::backgroundImageCallback, this);
-
-  timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0),
-    &RotoZoom::update, this);
-  // force timer start by making old frame_rate different
-  updateTimer(timer_, config_.frame_rate, config_.frame_rate - 1.0);
+  // Force flush of the stdout buffer.
+  // This ensures a correct sync of all prints
+  // even when executed simultaneously within a launch file.
+  setvbuf(stdout, NULL, _IONBF, BUFSIZ);
+  rclcpp::spin(std::make_shared<image_manip::RotoZoom>());
+  rclcpp::shutdown();
+  return 0;
 }
 
-};  // namespace image_manip
-
-#include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(image_manip::RotoZoom, nodelet::Nodelet)
