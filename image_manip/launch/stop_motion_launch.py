@@ -55,11 +55,24 @@ def generate_launch_description():
         data = dict(v4l2ucp = dict(ros__parameters = dict(
                         device = device,
                         )))
-        yaml.dump(data, outfile, default_flow_style=False)
-
-    launches.append(launch_ros.actions.Node(
+        yaml.dump(data, outfile, default_flow_style=false)
+    launches.append(launch_ros.actions.node(
                 package='v4l2ucp', node_executable='v4l2ucp_node', output='screen',
                 arguments=["__params:=" + v4l2ucp_params]
+                ))
+
+    params = prefix + "color.yaml"
+    with open(params, 'w') as outfile:
+        print("opened " + params + " for yaml writing")
+        data = dict(v4l2ucp = dict(ros__parameters = dict(
+                        red = 128,
+                        green = 128,
+                        blue = 128,
+                        )))
+        yaml.dump(data, outfile, default_flow_style=false)
+    launches.append(launch_ros.actions.node(
+                package='image_manip', node_executable='color_node', output='screen',
+                arguments=["__params:=" + params]
                 ))
 
     if False:

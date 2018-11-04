@@ -63,6 +63,20 @@ target_link_libraries(roto_zoom
   ${cv_bridge_LIBRARIES})
 install(TARGETS roto_zoom DESTINATION lib/${PROJECT_NAME})
 
+add_executable(color src/color.cpp src/utility.cpp)
+ament_target_dependencies(color
+  "cv_bridge"
+  "rclcpp"
+  "sensor_msgs"
+  "std_msgs")
+include_directories(color
+  ${OpenCV_INCLUDE_DIRECTORIES}
+  include)
+target_link_libraries(color
+  ${OpenCV_LIBRARIES}
+  ${cv_bridge_LIBRARIES})
+install(TARGETS color DESTINATION lib/${PROJECT_NAME})
+
 install(DIRECTORY data DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 
