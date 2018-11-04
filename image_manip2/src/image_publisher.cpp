@@ -68,7 +68,7 @@ int main(int argc, char * argv[])
   // even when executed simultaneously within a launch file.
   setvbuf(stdout, NULL, _IONBF, BUFSIZ);
 
-  for (size_t i = 0; i < argc; ++i) {
+  for (int i = 0; i < argc; ++i) {
     std::cout << argv[i] << "\n";
   }
   std::string image_name;
