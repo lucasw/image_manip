@@ -77,6 +77,20 @@ target_link_libraries(color
   ${cv_bridge_LIBRARIES})
 install(TARGETS color DESTINATION lib/${PROJECT_NAME})
 
+add_executable(image_deque src/image_deque.cpp src/utility.cpp)
+ament_target_dependencies(image_deque
+  "cv_bridge"
+  "rclcpp"
+  "sensor_msgs"
+  "std_msgs")
+include_directories(image_deque
+  ${OpenCV_INCLUDE_DIRECTORIES}
+  include)
+target_link_libraries(image_deque
+  ${OpenCV_LIBRARIES}
+  ${cv_bridge_LIBRARIES})
+install(TARGETS image_deque DESTINATION lib/${PROJECT_NAME})
+
 install(DIRECTORY data DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 

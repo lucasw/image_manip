@@ -34,7 +34,6 @@
 
 namespace image_manip
 {
-
 /// resize the source tmp0 mat to fit inside tmp1 with borders
 /// tmp0 and tmp1 have to be initialized already
 /// TBD add another mode which chops off the edges so there

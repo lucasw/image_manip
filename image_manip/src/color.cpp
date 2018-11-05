@@ -50,6 +50,7 @@ Color::Color() : Node("color")
   // an input image
   get_parameter_or("width", width_, width_);
   get_parameter_or("height", height_, height_);
+  // TODO(lucasw) get update rate
 
   pub_ = create_publisher<sensor_msgs::msg::Image>("image");
 
