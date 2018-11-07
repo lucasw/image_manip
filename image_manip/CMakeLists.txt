@@ -91,6 +91,20 @@ target_link_libraries(image_deque
   ${cv_bridge_LIBRARIES})
 install(TARGETS image_deque DESTINATION lib/${PROJECT_NAME})
 
+add_executable(iir_image src/iir_image.cpp src/utility.cpp)
+ament_target_dependencies(iir_image
+  "cv_bridge"
+  "rclcpp"
+  "sensor_msgs"
+  "std_msgs")
+include_directories(iir_image
+  ${OpenCV_INCLUDE_DIRECTORIES}
+  include)
+target_link_libraries(iir_image
+  ${OpenCV_LIBRARIES}
+  ${cv_bridge_LIBRARIES})
+install(TARGETS iir_image DESTINATION lib/${PROJECT_NAME})
+
 install(DIRECTORY data DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 

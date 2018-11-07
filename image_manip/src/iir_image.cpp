@@ -29,19 +29,49 @@
  */
 
 #include <cv_bridge/cv_bridge.h>
-#include <image_manip/iir_image.h>
+#include <deque>
 #include <image_manip/utility.h>
-#include <image_manip/utility_ros.h>
-#include <sensor_msgs/Image.h>
-#include <sensor_msgs/image_encodings.h>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/image_encodings.hpp>
+#include <std_msgs/msg/float64.hpp>
+using std::placeholders::_1;
 
 
 namespace image_manip
 {
 
-IIRImage::IIRImage() :
-  use_time_sequence_(true),
-  dirty_(false)
+class IIRImage : public rclcpp::Node
+{
+public:
+  IIRImage();
+  ~IIRImage();
+  void init();
+private:
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
+  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_;
+
+  std::vector<rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr> image_subs_;
+
+  double frame_rate_ = 20;
+  std::vector<double> b_coeffs_ = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
+  std::vector<double> a_coeffs_ = {1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+  bool use_time_sequence_ = false;
+
+  rclcpp::TimerBase::SharedPtr timer_;
+  void update();
+
+  std::deque<sensor_msgs::msg::Image::SharedPtr> in_images_;
+  std::deque<cv_bridge::CvImageConstPtr> in_cv_images_;
+  std::deque<cv::Mat> out_frames_;
+  bool dirty_ = false;
+
+  void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
+  void imagesCallback(const sensor_msgs::msg::Image::SharedPtr msg, const size_t index);
+};
+
+IIRImage::IIRImage() : Node("iir_image")
 {
 }
 
@@ -49,56 +79,7 @@ IIRImage::~IIRImage()
 {
 }
 
-void IIRImage::callback(
-    image_manip::IIRImageConfig& config,
-    uint32_t level)
-{
-  updateTimer(timer_, config.frame_rate, config_.frame_rate);
-  config_ = config;
-
-  if (use_time_sequence_)
-  {
-    b_coeffs_.resize(8);
-    a_coeffs_.resize(8);
-  }
-  if (b_coeffs_.size() > 0)
-    b_coeffs_[0] = config_.b0;
-  if (b_coeffs_.size() > 1)
-    b_coeffs_[1] = config_.b1;
-  if (b_coeffs_.size() > 2)
-    b_coeffs_[2] = config_.b2;
-  if (b_coeffs_.size() > 3)
-    b_coeffs_[3] = config_.b3;
-  if (b_coeffs_.size() > 4)
-    b_coeffs_[4] = config_.b4;
-  if (b_coeffs_.size() > 5)
-    b_coeffs_[5] = config_.b5;
-  if (b_coeffs_.size() > 6)
-    b_coeffs_[6] = config_.b6;
-  if (b_coeffs_.size() > 7)
-    b_coeffs_[7] = config_.b7;
-
-  if (a_coeffs_.size() > 0)
-    a_coeffs_[0] = config_.a0;
-  if (a_coeffs_.size() > 1)
-    a_coeffs_[1] = config_.a1;
-  if (a_coeffs_.size() > 2)
-    a_coeffs_[2] = config_.a2;
-  if (a_coeffs_.size() > 3)
-    a_coeffs_[3] = config_.a3;
-  if (a_coeffs_.size() > 4)
-    a_coeffs_[4] = config_.a4;
-  if (a_coeffs_.size() > 5)
-    a_coeffs_[5] = config_.a5;
-  if (a_coeffs_.size() > 6)
-    a_coeffs_[6] = config_.a6;
-  if (a_coeffs_.size() > 7)
-    a_coeffs_[7] = config_.a7;
-
-  dirty_ = true;
-}
-
-void IIRImage::update(const ros::TimerEvent& e)
+void IIRImage::update()
 {
   if (!dirty_)
     return;
@@ -126,7 +107,7 @@ void IIRImage::update(const ros::TimerEvent& e)
       }
       catch (cv_bridge::Exception& e)
       {
-        ROS_ERROR("cv_bridge exception: %s", e.what());
+        RCLCPP_ERROR(get_logger(), "cv_bridge exception: %s", e.what());
         continue;
       }
     }
@@ -168,11 +149,11 @@ void IIRImage::update(const ros::TimerEvent& e)
 
   // TODO(lucasw) this may be argument for keeping original Image messages around
   cv_bridge::CvImage cv_image;
-  cv_image.header.stamp = ros::Time::now();  // or reception time of original message?
+  cv_image.header.stamp = now();  // or reception time of original message?
   cv_image.image = out_frame;
   cv_image.encoding = "rgb8";
-  const sensor_msgs::ImageConstPtr out_image(cv_image.toImageMsg());
-  pub_.publish(out_image);
+  sensor_msgs::msg::Image::SharedPtr out_image(cv_image.toImageMsg());
+  pub_->publish(out_image);
 
   out_frames_.push_front(out_frame);
   if (out_frames_.size() > a_coeffs_.size())
@@ -183,7 +164,7 @@ void IIRImage::update(const ros::TimerEvent& e)
   dirty_ = false;
 }
 
-void IIRImage::imageCallback(const sensor_msgs::ImageConstPtr& msg)
+void IIRImage::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
 {
   in_images_.push_front(msg);
   in_cv_images_.push_front(cv_bridge::CvImageConstPtr());
@@ -195,14 +176,13 @@ void IIRImage::imageCallback(const sensor_msgs::ImageConstPtr& msg)
   }
 
   dirty_ = true;
-  ros::TimerEvent e;
   // negative frame_rate is a disable
   // TODO(lucasw) or should that be the other way around?
-  if (config_.frame_rate == 0)
-    update(e);
+  if (frame_rate_ == 0)
+    update();
 }
 
-void IIRImage::imagesCallback(const sensor_msgs::ImageConstPtr& msg, const size_t index)
+void IIRImage::imagesCallback(const sensor_msgs::msg::Image::SharedPtr msg, const size_t index)
 {
   if (index >= in_images_.size())
     return;
@@ -213,28 +193,24 @@ void IIRImage::imagesCallback(const sensor_msgs::ImageConstPtr& msg, const size_
   dirty_ = true;
 }
 
-void IIRImage::onInit()
+void IIRImage::init()
 {
-  dirty_ = false;
-  use_time_sequence_ = true;
+  pub_ = create_publisher<sensor_msgs::msg::Image>("image_out");
 
-  pub_ = getNodeHandle().advertise<sensor_msgs::Image>("image_out", 5);
-
-  server_.reset(new ReconfigureServer(dr_mutex_, getPrivateNodeHandle()));
-  dynamic_reconfigure::Server<image_manip::IIRImageConfig>::CallbackType cbt =
-      boost::bind(&IIRImage::callback, this, _1, _2);
-  server_->setCallback(cbt);
-
-  getPrivateNodeHandle().getParam("use_time_sequence", use_time_sequence_);
+  get_parameter_or("use_time_sequence", use_time_sequence_, use_time_sequence_);
 
   if (!use_time_sequence_)
   {
     // TODO(lucasw) update config from b_coeffs
-    getPrivateNodeHandle().getParam("b_coeffs", b_coeffs_);
-    if (b_coeffs_.size() == 0)
+    for (size_t i = 0; i < b_coeffs_.size(); ++i)
     {
-      ROS_WARN_STREAM("no b coefficients");
+      get_parameter_or("b" + std::to_string(i), b_coeffs_[i], b_coeffs_[i]);
     }
+    for (size_t i = 0; i < a_coeffs_.size(); ++i)
+    {
+      get_parameter_or("a" + std::to_string(i), a_coeffs_[i], a_coeffs_[i]);
+    }
+
     in_images_.resize(b_coeffs_.size());
     in_cv_images_.resize(b_coeffs_.size());
 
@@ -242,25 +218,39 @@ void IIRImage::onInit()
     {
       std::stringstream ss;
       ss << "image_" << i;
-      ROS_INFO_STREAM("subscribe " << ss.str() << " " << b_coeffs_[i]);
-      image_subs_.push_back(getNodeHandle().subscribe<sensor_msgs::Image>(
-          ss.str(), 1,
-          boost::bind(&IIRImage::imagesCallback, this, _1, i)));
+      RCLCPP_INFO(get_logger(), "subscribe %s %f", ss.str().c_str(), b_coeffs_[i]);
+
+      std::function<void(std::shared_ptr<sensor_msgs::msg::Image>)> fnc;
+      fnc = std::bind(&IIRImage::imagesCallback, this, _1, i);
+      image_subs_.push_back(create_subscription<sensor_msgs::msg::Image>(
+          ss.str(), fnc));
     }
-    // getPrivateNodeHandle().getParam("a_coeffs", a_coeffs_);
   }
   else
   {
-    sub_ = getNodeHandle().subscribe("image_in", 1, &IIRImage::imageCallback, this);
+    sub_ = create_subscription<sensor_msgs::msg::Image>("image_in",
+        std::bind(&IIRImage::imageCallback, this, _1));
   }
 
-  timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0),
-      &IIRImage::update, this);
-  // force timer start by making old frame_rate different
-  updateTimer(timer_, config_.frame_rate, config_.frame_rate - 1.0);
+  get_parameter_or("frame_rate", frame_rate_, frame_rate_);
+  const int period_ms = 1000.0 / frame_rate_;
+  timer_ = create_wall_timer(std::chrono::milliseconds(period_ms),
+      std::bind(&IIRImage::update, this));
 }
 
-};  // namespace image_manip
+}  // namespace image_manip
 
-#include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(image_manip::IIRImage, nodelet::Nodelet)
+int main(int argc, char * argv[])
+{
+  rclcpp::init(argc, argv);
+
+  // Force flush of the stdout buffer.
+  // This ensures a correct sync of all prints
+  // even when executed simultaneously within a launch file.
+  setvbuf(stdout, NULL, _IONBF, BUFSIZ);
+  auto iir_image = std::make_shared<image_manip::IIRImage>();
+  iir_image->init();
+  rclcpp::spin(iir_image);
+  rclcpp::shutdown();
+  return 0;
+}
