@@ -95,7 +95,7 @@ void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
   {
 
   }
-  else if (frame_rate_ == 0)
+  else if (frame_rate_ == 0.0)
   {
     update();
   }
@@ -169,7 +169,7 @@ private:
   bool dirty_ = false;
   int width_ = 0;
   int height_ = 0;
-  float frame_rate_ = 0.0;
+  double frame_rate_ = 0.0;
   unsigned int mode_ = 0;
   int interpolate_mode_ = cv::INTER_NEAREST;
   sensor_msgs::msg::Image::SharedPtr msg_;

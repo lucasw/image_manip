@@ -54,8 +54,9 @@ private:
   std::vector<rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr> image_subs_;
 
   double frame_rate_ = 20;
-  std::vector<double> b_coeffs_ = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
-  std::vector<double> a_coeffs_ = {1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+  std::vector<double> b_coeffs_;
+  // faster to leave this empty, which amounts to a_coeffs_ = {1.0};
+  std::vector<double> a_coeffs_;
 
   bool use_time_sequence_ = false;
 
@@ -142,7 +143,7 @@ void IIRImage::update()
         out_frame -= out_frames_[i - 1] * -an;
     }
   }
-  if (!out_frame.empty() && a_coeffs_.size() > 0)
+  if (!out_frame.empty() && (a_coeffs_.size() > 0) && (a_coeffs_[0] != 1.0))
   {
     out_frame *= 1.0 / a_coeffs_[0];
   }
@@ -199,18 +200,27 @@ void IIRImage::init()
 
   get_parameter_or("use_time_sequence", use_time_sequence_, use_time_sequence_);
 
-  if (!use_time_sequence_)
+  // TODO(lucasw) update config from b_coeffs
   {
-    // TODO(lucasw) update config from b_coeffs
+    int num_b = 0;
+    get_parameter_or("num_b", num_b, num_b);
+    b_coeffs_.resize(num_b);
+    const double div = 1.0 / static_cast<double>(num_b);
     for (size_t i = 0; i < b_coeffs_.size(); ++i)
     {
-      get_parameter_or("b" + std::to_string(i), b_coeffs_[i], b_coeffs_[i]);
+      get_parameter_or("b" + std::to_string(i), b_coeffs_[i], div);
     }
+    int num_a = 0;
+    get_parameter_or("num_a", num_a, num_a);
+    a_coeffs_.resize(num_a);
     for (size_t i = 0; i < a_coeffs_.size(); ++i)
     {
-      get_parameter_or("a" + std::to_string(i), a_coeffs_[i], a_coeffs_[i]);
+      get_parameter_or("a" + std::to_string(i), a_coeffs_[i], (i > 0) ? 0.0 : 1.0);
     }
+  }
 
+  if (!use_time_sequence_)
+  {
     in_images_.resize(b_coeffs_.size());
     in_cv_images_.resize(b_coeffs_.size());
 

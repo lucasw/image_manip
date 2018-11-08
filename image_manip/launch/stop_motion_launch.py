@@ -18,8 +18,8 @@ def generate_launch_description():
     framerate = 5
 
     decimation = 4
-    small_width = width / decimation
-    small_height = height / decimation
+    small_width = int(width / decimation)
+    small_height = int(height / decimation)
 
     # write all of the above to various /tmp/ param.yaml files
     # TODO(lucasw) store the parameters in a log location -
@@ -108,12 +108,14 @@ def generate_launch_description():
         print("opened " + params + " for yaml writing")
         data = dict(blur_image = dict(ros__parameters = dict(
                         use_time_sequence = False,
+                        num_b = 2,
                         b0 = 0.5,
                         b1 = 0.5,
                         )))
         yaml.dump(data, outfile, default_flow_style=False)
     launches.append(launch_ros.actions.Node(
-                package='image_manip', node_executable='blur_image', output='screen',
+                package='image_manip', node_executable='iir_image',
+                node_name='blur_image', output='screen',
                 arguments=["__params:=" + params],
                 remappings=[('image_0', 'saved_image_small'),
                 ('image_1', 'live_image_small'),
@@ -141,6 +143,7 @@ def generate_launch_description():
         print("opened " + params + " for yaml writing")
         data = dict(v4l2ucp = dict(ros__parameters = dict(
                         use_time_sequence = False,
+                        num_b = 3,
                         b0 = 1.0,
                         b1 = 0.5,
                         b2 = -0.5,
