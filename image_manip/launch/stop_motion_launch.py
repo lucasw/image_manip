@@ -53,16 +53,16 @@ def generate_launch_description():
         ))
 
     # camera control
-    v4l2ucp_params = prefix + "v4l2ucp.yaml"
-    with open(v4l2ucp_params, 'w') as outfile:
-        print("opened " + v4l2ucp_params + " for yaml writing")
+    params = prefix + "v4l2ucp.yaml"
+    with open(params, 'w') as outfile:
+        print("opened " + params + " for yaml writing")
         data = dict(v4l2ucp = dict(ros__parameters = dict(
                         device = device,
                         )))
         yaml.dump(data, outfile, default_flow_style=False)
-    launches.append(launch_ros.actions.node(
+    launches.append(launch_ros.actions.Node(
                 package='v4l2ucp', node_executable='v4l2ucp_node', output='screen',
-                arguments=["__params:=" + v4l2ucp_params],
+                arguments=["__params:=" + params]
                 # remappings=[('image_raw', 'image_raw')]
                 ))
 
@@ -73,7 +73,7 @@ def generate_launch_description():
                 device = device,
                 )))
         yaml.dump(data, outfile, default_flow_style=False)
-    launches.append(launch_ros.actions.node(
+    launches.append(launch_ros.actions.Node(
                 package='image_manip', node_executable='save_image', output='screen',
                 arguments=["__params:=" + params],
                 remappings=[
@@ -83,6 +83,7 @@ def generate_launch_description():
 
     # resize the image down for efficiency
     for key in ['live', 'saved']:
+        # the name isn't the name of the node, just the executable
         node_name = key + '_resize'
         params = prefix + node_name + '.yaml'
         with open(params, 'w') as outfile:
@@ -95,7 +96,8 @@ def generate_launch_description():
                         ))
             yaml.dump(data, outfile, default_flow_style=False)
         launches.append(launch_ros.actions.Node(
-            package='image_manip', node_executable=node_name, output='screen',
+            package='image_manip', node_executable='resize',
+            node_name=node_name, output='screen',
             arguments=['__params:=' + params],
             remappings=[('image_out', key + '_image_small')]
             ))
@@ -110,7 +112,7 @@ def generate_launch_description():
                         b1 = 0.5,
                         )))
         yaml.dump(data, outfile, default_flow_style=False)
-    launches.append(launch_ros.actions.node(
+    launches.append(launch_ros.actions.Node(
                 package='image_manip', node_executable='blur_image', output='screen',
                 arguments=["__params:=" + params],
                 remappings=[('image_0', 'saved_image_small'),
@@ -128,7 +130,7 @@ def generate_launch_description():
                         blue = 128,
                         )))
         yaml.dump(data, outfile, default_flow_style=False)
-    launches.append(launch_ros.actions.node(
+    launches.append(launch_ros.actions.Node(
                 package='image_manip', node_executable='color', output='screen',
                 arguments=["__params:=" + params],
                 remappings=[('image', 'gray')]))
@@ -144,7 +146,7 @@ def generate_launch_description():
                         b2 = -0.5,
                         )))
         yaml.dump(data, outfile, default_flow_style=False)
-    launches.append(launch_ros.actions.node(
+    launches.append(launch_ros.actions.Node(
                 package='image_manip', node_executable='iir_image', output='screen',
                 arguments=["__params:=" + params],
                 remappings=[
