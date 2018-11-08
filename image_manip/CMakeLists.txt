@@ -26,6 +26,7 @@ find_package(rmw REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 
+# TODO(lucasw) make a cmake macro and a list of all the cpp files
 add_executable(image_publisher src/image_publisher.cpp)
 ament_target_dependencies(image_publisher
   "rclcpp"
@@ -104,6 +105,20 @@ target_link_libraries(iir_image
   ${OpenCV_LIBRARIES}
   ${cv_bridge_LIBRARIES})
 install(TARGETS iir_image DESTINATION lib/${PROJECT_NAME})
+
+add_executable(save_image src/save_image.cpp src/utility.cpp)
+ament_target_dependencies(save_image
+  "cv_bridge"
+  "rclcpp"
+  "sensor_msgs"
+  "std_msgs")
+include_directories(save_image
+  ${OpenCV_INCLUDE_DIRECTORIES}
+  include)
+target_link_libraries(save_image
+  ${OpenCV_LIBRARIES}
+  ${cv_bridge_LIBRARIES})
+install(TARGETS save_image DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY data DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})

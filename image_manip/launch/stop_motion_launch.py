@@ -17,8 +17,9 @@ def generate_launch_description():
     height = 1080
     framerate = 5
 
-    small_width = 480
-    small_height = 270
+    decimation = 4
+    small_width = width / decimation
+    small_height = height / decimation
 
     # write all of the above to various /tmp/ param.yaml files
     # TODO(lucasw) store the parameters in a log location -
@@ -26,6 +27,8 @@ def generate_launch_description():
     prefix = "/tmp/ros2/"
     if not os.path.exists(prefix):
         os.makedirs(prefix)
+
+    # usb camera
     usb_cam_params = prefix + "usb_cam.yaml"
     with open(usb_cam_params, 'w') as outfile:
         print("opened " + usb_cam_params + " for yaml writing")
@@ -49,18 +52,73 @@ def generate_launch_description():
         arguments=["__params:=" + usb_cam_params]
         ))
 
+    # camera control
     v4l2ucp_params = prefix + "v4l2ucp.yaml"
     with open(v4l2ucp_params, 'w') as outfile:
         print("opened " + v4l2ucp_params + " for yaml writing")
         data = dict(v4l2ucp = dict(ros__parameters = dict(
                         device = device,
                         )))
-        yaml.dump(data, outfile, default_flow_style=false)
+        yaml.dump(data, outfile, default_flow_style=False)
     launches.append(launch_ros.actions.node(
                 package='v4l2ucp', node_executable='v4l2ucp_node', output='screen',
-                arguments=["__params:=" + v4l2ucp_params]
+                arguments=["__params:=" + v4l2ucp_params],
+                # remappings=[('image_raw', 'image_raw')]
                 ))
 
+    params = prefix + "save_image.yaml"
+    with open(params, 'w') as outfile:
+        print("opened " + params + " for yaml writing")
+        data = dict(save_image = dict(ros__parameters = dict(
+                device = device,
+                )))
+        yaml.dump(data, outfile, default_flow_style=False)
+    launches.append(launch_ros.actions.node(
+                package='image_manip', node_executable='save_image', output='screen',
+                arguments=["__params:=" + params],
+                remappings=[
+                    ('image', 'image_raw'),
+                    ('single', 'captured_image_trigger'),
+                ]))
+
+    # resize the image down for efficiency
+    for key in ['live', 'saved']:
+        node_name = key + '_resize'
+        params = prefix + node_name + '.yaml'
+        with open(params, 'w') as outfile:
+            print('opened ' + params + ' for yaml writing')
+            data = {}
+            data[node_name] = dict(ros__parameters = dict(
+                        frame_rate = 0.0,
+                        width = small_width,
+                        height = small_height,
+                        ))
+            yaml.dump(data, outfile, default_flow_style=False)
+        launches.append(launch_ros.actions.Node(
+            package='image_manip', node_executable=node_name, output='screen',
+            arguments=['__params:=' + params],
+            remappings=[('image_out', key + '_image_small')]
+            ))
+
+    # blur the last saved image and the live image
+    params = prefix + "blur_image.yaml"
+    with open(params, 'w') as outfile:
+        print("opened " + params + " for yaml writing")
+        data = dict(blur_image = dict(ros__parameters = dict(
+                        use_time_sequence = False,
+                        b0 = 0.5,
+                        b1 = 0.5,
+                        )))
+        yaml.dump(data, outfile, default_flow_style=False)
+    launches.append(launch_ros.actions.node(
+                package='image_manip', node_executable='blur_image', output='screen',
+                arguments=["__params:=" + params],
+                remappings=[('image_0', 'saved_image_small'),
+                ('image_1', 'live_image_small'),
+                # ('image_out', 'diff_image'),
+                ]))
+
+    # generate a gray image for use in image diff
     params = prefix + "color.yaml"
     with open(params, 'w') as outfile:
         print("opened " + params + " for yaml writing")
@@ -69,12 +127,43 @@ def generate_launch_description():
                         green = 128,
                         blue = 128,
                         )))
-        yaml.dump(data, outfile, default_flow_style=false)
+        yaml.dump(data, outfile, default_flow_style=False)
     launches.append(launch_ros.actions.node(
-                package='image_manip', node_executable='color_node', output='screen',
-                arguments=["__params:=" + params]
-                ))
+                package='image_manip', node_executable='color', output='screen',
+                arguments=["__params:=" + params],
+                remappings=[('image', 'gray')]))
 
+    # diff the gray image with the last saved image and the current live image
+    params = prefix + "diff_image.yaml"
+    with open(params, 'w') as outfile:
+        print("opened " + params + " for yaml writing")
+        data = dict(v4l2ucp = dict(ros__parameters = dict(
+                        use_time_sequence = False,
+                        b0 = 1.0,
+                        b1 = 0.5,
+                        b2 = -0.5,
+                        )))
+        yaml.dump(data, outfile, default_flow_style=False)
+    launches.append(launch_ros.actions.node(
+                package='image_manip', node_executable='iir_image', output='screen',
+                arguments=["__params:=" + params],
+                remappings=[
+                    ('image_0', 'gray'),
+                    ('image_1', 'saved_image_small'),
+                    ('image_2', 'live_image_small'),
+                    ('image_out', 'diff_image'),
+                    ]))
+
+    # TODO(lucasw)
+    if False:
+        imgui_ros_dir = get_package_share_directory('imgui_ros')
+        if imgui_ros_dir is None:
+            pass
+            # TODO(lucasw) warning message or use showimage, or rqt
+        else:
+            pass
+            # TODO(lucasw) load up imgui_ros instance and launch a python
+            # script that will populate the ui.
     if False:
       image_manip_params = prefix + "image_manip.yaml"
       image_manip_dir = get_package_share_directory('image_manip')
@@ -82,9 +171,5 @@ def generate_launch_description():
       launches.append(launch_ros.actions.Node(
               package='image_manip', node_executable='image_publisher', output='screen',
               arguments=[image_manip_dir + "/data/mosaic.jpg"]))
-      launches.append(launch_ros.actions.Node(
-              package='image_manip', node_executable='resize', output='screen',
-              arguments=["__params:=" + image_manip_params],
-              remappings=[('image_in', 'image_raw')]))
 
     return launch.LaunchDescription(launches)

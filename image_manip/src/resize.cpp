@@ -50,6 +50,10 @@ Resize() : Node("resize")
   dirty_ = false;
   pub_ = this->create_publisher<sensor_msgs::msg::Image>("image_out");
 
+  get_parameter_or("frame_rate", frame_rate_, frame_rate_);
+  get_parameter_or("width", width_, width_);
+  get_parameter_or("height", height_, height_);
+
   image_sub_ = this->create_subscription<sensor_msgs::msg::Image>("image_in",
       std::bind(&image_manip::Resize::imageCallback, this, _1));
   width_sub_ = this->create_subscription<std_msgs::msg::UInt16>("width",
@@ -57,8 +61,13 @@ Resize() : Node("resize")
   height_sub_ = this->create_subscription<std_msgs::msg::UInt16>("height",
       std::bind(&image_manip::Resize::heightCallback, this, _1));
 
-  // timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0),
-  //  &update, this);
+  if (frame_rate_ > 0)
+  {
+    timer_ = this->create_wall_timer(
+        std::chrono::milliseconds(static_cast<long int>(1000.0 / frame_rate_)),
+        std::bind(&Resize::update, this));
+    RCLCPP_INFO(get_logger(), "starting timer");
+  }
 }
 
 ~Resize()
@@ -82,7 +91,11 @@ void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
 
   // negative frame_rate is a disable
   // TODO(lucasw) or should that be the other way around?
-  if (frame_rate_ == 0)
+  if (frame_rate_ < 0)
+  {
+
+  }
+  else if (frame_rate_ == 0)
   {
     update();
   }
@@ -112,8 +125,18 @@ void update()
     return;
   }
 
+  int width = width_;
+  if (width <= 0)
+  {
+    width = cv_ptr->image.cols;
+  }
+  int height = height_;
+  if (height <= 0)
+  {
+    height = cv_ptr->image.rows;
+  }
+  const cv::Size size(width, height);
   cv_bridge::CvImage cv_image;
-  const cv::Size size(width_, height_);
 
   try {
   if (mode_ == 0)
@@ -144,8 +167,8 @@ void update()
 private:
   // sensor_msgs::
   bool dirty_ = false;
-  int width_ = 100;
-  int height_ = 100;
+  int width_ = 0;
+  int height_ = 0;
   float frame_rate_ = 0.0;
   unsigned int mode_ = 0;
   int interpolate_mode_ = cv::INTER_NEAREST;
@@ -154,7 +177,8 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
   rclcpp::Subscription<std_msgs::msg::UInt16>::SharedPtr width_sub_;
   rclcpp::Subscription<std_msgs::msg::UInt16>::SharedPtr height_sub_;
-};
+  rclcpp::TimerBase::SharedPtr timer_;
+};  // Resize
 }  // namespace image_manip
 
 
