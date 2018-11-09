@@ -79,6 +79,7 @@ def generate_launch_description():
                 # remappings=[('image_raw', 'image_raw')]
                 ))
 
+    # ros2 topic pub /captured_image_trigger std_msgs/Bool "{data: True}" -1
     params = prefix + "save_image.yaml"
     with open(params, 'w') as outfile:
         print("opened " + params + " for yaml writing")
@@ -139,7 +140,8 @@ def generate_launch_description():
                 package='image_manip', node_executable='iir_image',
                 node_name=node_name, output='screen',
                 arguments=["__params:=" + params],
-                remappings=[('image_0', 'saved_image_small'),
+                remappings=[
+                ('image_0', 'saved_image_small'),
                 ('image_1', 'live_image_small'),
                 ('image_out', 'blur_image'),
                 ]))
@@ -154,6 +156,8 @@ def generate_launch_description():
                         red = 128,
                         green = 128,
                         blue = 128,
+                        width = small_width,
+                        height = small_height,
                         ))
         yaml.dump(data, outfile, default_flow_style=False)
     launches.append(launch_ros.actions.Node(
@@ -185,6 +189,18 @@ def generate_launch_description():
                     ('image_1', 'saved_image_small'),
                     ('image_2', 'live_image_small'),
                     ('image_out', 'diff_image'),
+                    ]))
+
+    # TODO(lucasw) the aguments aren't working, but remap does work
+    # run image_tools showimage -t /diff_image
+    images = ['diff_image', 'blur_image', 'image_raw']
+    for image in images:
+      launches.append(launch_ros.actions.Node(
+              package='image_tools', node_executable='showimage', # output='screen',
+              node_name='show_' + image,
+              # arguments=['-t ' + image],
+              remappings=[
+                    ('image', image),
                     ]))
 
     # TODO(lucasw)
