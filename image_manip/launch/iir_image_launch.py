@@ -35,36 +35,45 @@ def generate_launch_description():
     if not os.path.exists(prefix):
         os.makedirs(prefix)
 
-    node_name = 'image_publisher'
-    # params = prefix + node_name + '.yaml'
+    images = {}
+    images['mosaic'] = 'mosaic.jpg'
+    images['gradient_spiral'] = 'gradient_spiral.png'
+    list_images = []
+
     image_manip_dir = get_package_share_directory('image_manip')
     print('image_manip dir ' + image_manip_dir)
-    launches.append(launch_ros.actions.Node(
-        package='image_manip', node_executable='image_publisher',
-        node_name=node_name, output='screen',
-        arguments=[image_manip_dir + '/data/mosaic.jpg'],
-        remappings=[('image_raw', 'mosaic'),
-        ]))
+    for key in images.keys():
+        node_name = key + '_publisher'
+        # params = prefix + node_name + '.yaml'
+        launches.append(launch_ros.actions.Node(
+            package='image_manip', node_executable='image_publisher',
+            node_name=node_name, output='screen',
+            arguments=[image_manip_dir + '/data/' + images[key]],
+            remappings=[('image_raw', key),
+            ]))
 
-    node_name = 'resize'
-    params = prefix + node_name + '.yaml'
-    with open(params, 'w') as outfile:
-        print('opened ' + params + ' for yaml writing')
-        data = {}
-        data[node_name] = dict(ros__parameters = dict(
-                    frame_rate = 0.0,
-                    width = width,
-                    height = height,
-                    ))
-        yaml.dump(data, outfile, default_flow_style=False)
-    launches.append(launch_ros.actions.Node(
-        package='image_manip', node_executable='resize',
-        node_name=node_name, output='screen',
-        arguments=['__params:=' + params],
-        remappings=[
-            ('image_in', 'mosaic'),
-            ('image_out', 'mosaic_resized'),
-        ]))
+        image_out = key + '_resized'
+        list_images.append(image_out)
+
+        node_name = key + '_resize'
+        params = prefix + node_name + '.yaml'
+        with open(params, 'w') as outfile:
+            print('opened ' + params + ' for yaml writing')
+            data = {}
+            data[node_name] = dict(ros__parameters = dict(
+                        frame_rate = 0.0,
+                        width = width,
+                        height = height,
+                        ))
+            yaml.dump(data, outfile, default_flow_style=False)
+        launches.append(launch_ros.actions.Node(
+            package='image_manip', node_executable='resize',
+            node_name=node_name, output='screen',
+            arguments=['__params:=' + params],
+            remappings=[
+                ('image_in', key),
+                ('image_out', image_out),
+            ]))
 
     # generate a gray image for use in image diff
     node_name = 'gray_color'
@@ -75,7 +84,7 @@ def generate_launch_description():
         data[node_name] = dict(ros__parameters = dict(
                         red = 148,
                         green = 128,
-                        blue = 28,
+                        blue = 68,
                         width = width,
                         height = height,
                         ))
@@ -94,9 +103,10 @@ def generate_launch_description():
         data = {}
         data[node_name] = dict(ros__parameters = dict(
                         use_time_sequence = False,
-                        num_b = 2,
-                        b0 = 0.5,
+                        num_b = 3,
+                        b0 = 1.0,
                         b1 = 0.5,
+                        b2 = -0.5,
                         ))
         yaml.dump(data, outfile, default_flow_style=False)
     launches.append(launch_ros.actions.Node(
@@ -104,9 +114,10 @@ def generate_launch_description():
                 node_name=node_name, output='screen',
                 arguments=['__params:=' + params],
                 remappings=[
-                    ('image_0', 'mosaic_resized'),
-                    ('image_1', 'color'),
-                    ('image_out', 'blur_image'),
+                    ('image_0', 'color'),
+                    ('image_1', list_images[0]),
+                    ('image_2', list_images[1]),
+                    ('image_out', 'iir_image'),
                 ]))
 
     launches.append(launch_ros.actions.Node(
@@ -114,7 +125,7 @@ def generate_launch_description():
                 node_name=node_name, output='screen',
                 arguments=['__params:=' + params],
                 remappings=[
-                    ('image_raw', 'blur_image'),
+                    ('image_raw', 'iir_image'),
                 ]))
 
     return launch.LaunchDescription(launches)
