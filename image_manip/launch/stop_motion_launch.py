@@ -120,6 +120,8 @@ def generate_launch_description():
                 ('image_out', key + '_image_small'),
             ]))
 
+    # TODO(lucasw) need the image_deque in here to store the animation
+
     # blur the last saved image and the live image
     params = prefix + "blur_image.yaml"
     node_name = 'blur_image'
