@@ -95,7 +95,10 @@ def generate_launch_description():
                 ]))
 
     # resize the image down for efficiency
-    for key in ['live', 'saved']:
+    images_in = {}
+    images_in['live'] = 'image_raw'
+    images_in['saved'] = 'saved_image'
+    for key in images_in.keys():
         # the name isn't the name of the node, just the executable
         node_name = key + '_resize'
         params = prefix + node_name + '.yaml'
@@ -112,58 +115,68 @@ def generate_launch_description():
             package='image_manip', node_executable='resize',
             node_name=node_name, output='screen',
             arguments=['__params:=' + params],
-            remappings=[('image_out', key + '_image_small')]
-            ))
+            remappings=[
+                ('image_in', images_in[key]),
+                ('image_out', key + '_image_small'),
+            ]))
 
     # blur the last saved image and the live image
     params = prefix + "blur_image.yaml"
+    node_name = 'blur_image'
     with open(params, 'w') as outfile:
         print("opened " + params + " for yaml writing")
-        data = dict(blur_image = dict(ros__parameters = dict(
+        data = {}
+        data[node_name] = dict(ros__parameters = dict(
                         use_time_sequence = False,
                         num_b = 2,
                         b0 = 0.5,
                         b1 = 0.5,
-                        )))
+                        ))
         yaml.dump(data, outfile, default_flow_style=False)
     launches.append(launch_ros.actions.Node(
                 package='image_manip', node_executable='iir_image',
-                node_name='blur_image', output='screen',
+                node_name=node_name, output='screen',
                 arguments=["__params:=" + params],
                 remappings=[('image_0', 'saved_image_small'),
                 ('image_1', 'live_image_small'),
-                # ('image_out', 'diff_image'),
+                ('image_out', 'blur_image'),
                 ]))
 
     # generate a gray image for use in image diff
     params = prefix + "color.yaml"
+    node_name = 'gray_color'
     with open(params, 'w') as outfile:
         print("opened " + params + " for yaml writing")
-        data = dict(v4l2ucp = dict(ros__parameters = dict(
+        data = {}
+        data[node_name] = dict(ros__parameters = dict(
                         red = 128,
                         green = 128,
                         blue = 128,
-                        )))
+                        ))
         yaml.dump(data, outfile, default_flow_style=False)
     launches.append(launch_ros.actions.Node(
                 package='image_manip', node_executable='color', output='screen',
+                node_name=node_name,
                 arguments=["__params:=" + params],
                 remappings=[('image', 'gray')]))
 
     # diff the gray image with the last saved image and the current live image
     params = prefix + "diff_image.yaml"
+    node_name = 'diff_image'
     with open(params, 'w') as outfile:
         print("opened " + params + " for yaml writing")
-        data = dict(v4l2ucp = dict(ros__parameters = dict(
+        data = {}
+        data[node_name] = dict(ros__parameters = dict(
                         use_time_sequence = False,
                         num_b = 3,
                         b0 = 1.0,
                         b1 = 0.5,
                         b2 = -0.5,
-                        )))
+                        ))
         yaml.dump(data, outfile, default_flow_style=False)
     launches.append(launch_ros.actions.Node(
-                package='image_manip', node_executable='iir_image', output='screen',
+                package='image_manip', node_executable='iir_image',
+                node_name=node_name, output='screen',
                 arguments=["__params:=" + params],
                 remappings=[
                     ('image_0', 'gray'),
