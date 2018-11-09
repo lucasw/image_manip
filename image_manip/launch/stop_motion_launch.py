@@ -1,21 +1,34 @@
 # Copyright 2018 Lucas Walter
 
+import argparse
 import launch
 import launch_ros.actions
 import os
+import sys
 import yaml
 
 from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
+    parser = argparse.ArgumentParser(description='usb_cam demo')
+    parser.add_argument('-d', '--device', dest='device', type=str,
+            help='video device', default='dev/video0')
+    parser.add_argument('-wd', '--width', dest='width', type=int,
+            help='image width', default=640)
+    parser.add_argument('-ht', '--height', dest='height', type=int,
+            help='image height', default=480)
+    parser.add_argument('-f', '--fps', dest='frame_rate', type=float,
+            help='frame rate', default=5)
+    args, unknown = parser.parse_known_args(sys.argv[4:])
+
     launches = []
 
     # TODO(lucasw) how to get these from ros2 launch command line?
-    device = "/dev/video1"
-    width = 1920
-    height = 1080
-    framerate = 5
+    device = args.device
+    width = args.width
+    height = args.height
+    frame_rate = args.frame_rate
 
     decimation = 4
     small_width = int(width / decimation)
@@ -36,7 +49,7 @@ def generate_launch_description():
             usb_cam = dict(
                 ros__parameters = dict(
                     video_device = device,
-                    framerate = framerate,
+                    framerate = frame_rate,
                     io_method = "mmap",
                     frame_id = "camera",
                     pixel_format = "yuyv",
