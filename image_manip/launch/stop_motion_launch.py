@@ -9,11 +9,48 @@ import yaml
 
 from ament_index_python.packages import get_package_share_directory
 
+# TODO(lucasw) namespace ns
+def make_node(package, node_executable, node_name, prefix, params, remappings):
+    param_file = prefix + node_name + '.yaml'
+    with open(param_file, 'w') as outfile:
+        print("opened " + param_file + " for yaml writing")
+        data = {}
+        data[node_name] = dict(ros__parameters = params)
+        yaml.dump(data, outfile, default_flow_style=False)
+    # TODO(lucasw) check above for failure and return None
+    return launch_ros.actions.Node(
+                package=package,
+                node_executable=node_executable,
+                node_name=node_name,
+                output='screen',
+                arguments=["__params:=" + param_file],
+                remappings=remappings
+                )
+
+def image_deque(prefix):
+    params = dict(
+            use_time_sequence = False,
+            num_b = 2,
+            b0 = 0.5,
+            b1 = 0.5,
+            )
+    remappings=[
+        ('image', 'live_image_small'),
+        # ('captured_image_trigger', 'captured_image_trigger'),
+        ]
+
+    return make_node(
+        package='image_manip',
+        node_executable='image_deque',
+        node_name='image_deque',
+        prefix=prefix,
+        params=params,
+        remappings=remappings)
 
 def generate_launch_description():
     parser = argparse.ArgumentParser(description='usb_cam demo')
     parser.add_argument('-d', '--device', dest='device', type=str,
-            help='video device', default='dev/video0')
+            help='video device', default='/dev/video0')
     parser.add_argument('-wd', '--width', dest='width', type=int,
             help='image width', default=640)
     parser.add_argument('-ht', '--height', dest='height', type=int,
@@ -79,21 +116,22 @@ def generate_launch_description():
                 # remappings=[('image_raw', 'image_raw')]
                 ))
 
-    # ros2 topic pub /captured_image_trigger std_msgs/Bool "{data: True}" -1
-    params = prefix + "save_image.yaml"
-    with open(params, 'w') as outfile:
-        print("opened " + params + " for yaml writing")
-        data = dict(save_image = dict(ros__parameters = dict(
-                device = device,
-                )))
-        yaml.dump(data, outfile, default_flow_style=False)
-    launches.append(launch_ros.actions.Node(
-                package='image_manip', node_executable='save_image', output='screen',
-                arguments=["__params:=" + params],
-                remappings=[
-                    ('image', 'image_raw'),
-                    ('single', 'captured_image_trigger'),
-                ]))
+    # ros2 topic pub /capture_single std_msgs/Bool "{data: True}" -1
+    remappings = [
+        ('image', 'image_raw'),
+        ('single', 'captured_image_trigger'),
+        ]
+    params = dict(
+            device = device,
+            )
+    launches.append(make_node(
+            package='image_manip',
+            node_executable='save_image',
+            node_name='save_image',
+            prefix=prefix,
+            params=params,
+            remappings=remappings,
+            ))
 
     # resize the image down for efficiency
     images_in = {}
@@ -122,6 +160,7 @@ def generate_launch_description():
             ]))
 
     # TODO(lucasw) need the image_deque in here to store the animation
+    launches.append(image_deque(prefix))
 
     # blur the last saved image and the live image
     params = prefix + "blur_image.yaml"
@@ -193,9 +232,9 @@ def generate_launch_description():
 
     # TODO(lucasw) the aguments aren't working, but remap does work
     # run image_tools showimage -t /diff_image
-    images = ['diff_image', 'blur_image', 'image_raw']
+    images = ['diff_image', 'blur_image', 'image_raw', 'anim']
     for image in images:
-      launches.append(launch_ros.actions.Node(
+        launches.append(launch_ros.actions.Node(
               package='image_tools', node_executable='showimage', # output='screen',
               node_name='show_' + image,
               # arguments=['-t ' + image],

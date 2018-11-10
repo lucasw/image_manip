@@ -63,7 +63,7 @@ private:
   std::deque<sensor_msgs::msg::Image::SharedPtr> images_;
 
   // TODO(lucasw) some of these ought to be parameters
-  float frame_rate_ = 20.0;
+  float frame_rate_ = 5.0;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr frame_rate_sub_;
   void frameRateCallback(const std_msgs::msg::Float32::SharedPtr msg);
 
@@ -73,6 +73,7 @@ private:
   {
     if (msg->data)
     {
+      RCLCPP_INFO(get_logger(), "capture");
       capture_single_ = msg->data;
       dirty_ = true;
     }
@@ -92,7 +93,7 @@ private:
     dirty_ = true;
   }
 
-  bool use_live_frame_ = 0;
+  bool use_live_frame_ = true;
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr use_live_frame_sub_;
   void useLiveFrameCallback(const std_msgs::msg::Bool::SharedPtr msg)
   {
@@ -161,6 +162,7 @@ void ImageDeque::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
   if (!(capture_single_ || capture_continuous_))
     return;
 
+  RCLCPP_INFO(get_logger(), "capturing image %d + 1, %d", images_.size(), max_size_);
   images_.push_back(msg);
 
   // TODO(lucasw) make this optional
@@ -209,7 +211,7 @@ void ImageDeque::indexCallback(const std_msgs::msg::UInt16::SharedPtr msg)
 
 void ImageDeque::update()
 {
-  if (!dirty_)
+  if (!dirty_ && !use_live_frame_)
     return;
 
   // ROS_DEBUG_STREAM(index_ << " " << images_.size());
@@ -218,25 +220,27 @@ void ImageDeque::update()
   if (index_ <= images_.size())
   {
     if (index_ < images_.size())
+    {
       anim_pub_->publish(images_[index_]);
-    else if (live_frame_)
+    }
+    else if (use_live_frame_ && live_frame_)
+    {
       // preview the live frame at the end of the saved animation
       anim_pub_->publish(live_frame_);
+    }
     // TODO(lwalter) else publish something else?
-    // index_++;
+    index_++;
   }
 
-  // ROS_INFO_STREAM(images_.size() << " " << index_);
+  // RCLCPP_INFO(get_logger(), "%d %d\n", images_.size(), index_);
 
   // TODO(lucasw) maybe if start_index changes
   // it should force index_ to it, instead of waiting to cycle.
-  #if 0
-  if ((use_live_frame && (index_ > images_.size())) ||
-      (!use_live_frame) && (index_ >= images_.size()))
+  if ((use_live_frame_ && (index_ > images_.size())) ||
+      (!use_live_frame_ && (index_ >= images_.size())))
   {
     index_ = start_index_;
   }
-  #endif
 
   dirty_ = false;
 }
@@ -252,7 +256,7 @@ void ImageDeque::init()
 
   frame_rate_sub_ = this->create_subscription<std_msgs::msg::Float32>("frame_rate",
       std::bind(&ImageDeque::frameRateCallback, this, _1));
-  capture_single_sub_ = create_subscription<std_msgs::msg::Float32>("capture_single",
+  capture_single_sub_ = create_subscription<std_msgs::msg::Bool>("capture_single",
       std::bind(&ImageDeque::captureSingleCallback, this, _1));
   index_sub_ = create_subscription<std_msgs::msg::UInt16>("index",
       std::bind(&ImageDeque::indexCallback, this, _1));
