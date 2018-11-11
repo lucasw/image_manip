@@ -122,6 +122,9 @@ install(TARGETS save_image DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY data DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
+file(GLOB SCRIPT_FILES scripts/*)
+install(PROGRAMS ${SCRIPT_FILES}
+  DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

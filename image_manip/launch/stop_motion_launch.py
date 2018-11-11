@@ -230,28 +230,48 @@ def generate_launch_description():
                     ('image_out', 'diff_image'),
                     ]))
 
-    # TODO(lucasw) the aguments aren't working, but remap does work
-    # run image_tools showimage -t /diff_image
-    images = ['diff_image', 'blur_image', 'image_raw', 'anim']
-    for image in images:
-        launches.append(launch_ros.actions.Node(
-              package='image_tools', node_executable='showimage', # output='screen',
-              node_name='show_' + image,
-              # arguments=['-t ' + image],
-              remappings=[
-                    ('image', image),
-                    ]))
-
     # TODO(lucasw)
-    if False:
+    if True:
         imgui_ros_dir = get_package_share_directory('imgui_ros')
         if imgui_ros_dir is None:
-            pass
-            # TODO(lucasw) warning message or use showimage, or rqt
+            print('could not find imgui, using showimage instead')
+            # TODO(lucasw) the aguments aren't working, but remap does work
+            # run image_tools showimage -t /diff_image
+            images = ['diff_image', 'blur_image', 'image_raw', 'anim']
+            for image in images:
+                launches.append(launch_ros.actions.Node(
+                      package='image_tools', node_executable='showimage', # output='screen',
+                      node_name='show_' + image,
+                      # arguments=['-t ' + image],
+                      remappings=[
+                            ('image', image),
+                            ]))
         else:
-            pass
             # TODO(lucasw) load up imgui_ros instance and launch a python
             # script that will populate the ui.
+            params = dict(
+                    # use_time_sequence = False,
+                    # num_b = 2,
+                    )
+            remappings=[
+                # ('image', 'live_image_small'),
+                # ('captured_image_trigger', 'captured_image_trigger'),
+                ]
+
+            launches.append(make_node(
+                package='imgui_ros',
+                node_executable='imgui_ros_node',
+                node_name='imgui_ros',
+                prefix=prefix,
+                params=params,
+                remappings=remappings))
+
+            launches.append(launch_ros.actions.Node(
+                package='image_manip',
+                node_executable='stop_motion_imgui.py',
+                output='screen'))
+
+
     if False:
       image_manip_params = prefix + "image_manip.yaml"
       image_manip_dir = get_package_share_directory('image_manip')
