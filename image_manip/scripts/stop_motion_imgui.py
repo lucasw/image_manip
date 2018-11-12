@@ -42,7 +42,7 @@ class Demo(Node):
                 break
 
     def run(self):
-        images = ['diff_image', 'blur_image', 'image_raw', 'anim']
+        images = ['diff_image', 'blur_image', 'live_image_small', 'anim']
         for image in images:
             req = AddWindow.Request()
             req.name = image + " viewer"
