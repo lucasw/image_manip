@@ -269,6 +269,7 @@ def generate_launch_description():
             launches.append(launch_ros.actions.Node(
                 package='image_manip',
                 node_executable='stop_motion_imgui.py',
+                node_name='stop_motion_imgui',
                 output='screen'))
 
 
