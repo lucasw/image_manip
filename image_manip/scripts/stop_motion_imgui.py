@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from imgui_ros.msg import Widget
 from imgui_ros.srv import AddWindow
 from rcl_interfaces.msg import ParameterType
 from rcl_interfaces.srv import GetParameters, ListParameters
@@ -47,19 +48,24 @@ class StopMotionImGui(Node):
         images = ['diff_image', 'blur_image', 'live_image_small', 'anim']
         for image in images:
             req = AddWindow.Request()
-            req.name = image + " viewer"
-            req.topic = "/" + image
-            req.type = AddWindow.Request.IMAGE
+            req.name = image
+            widget = Widget()
+            widget.name = image + " viewer"
+            widget.topic = "/" + image
+            widget.type = Widget.IMAGE
+            req.widgets.append(widget)
             self.future = self.add_window_cli.call_async(req)
 
         req = AddWindow.Request()
-        req.name = "Capture"
-        req.topic = "/capture_single"
-        req.type = AddWindow.Request.PUB
-        req.sub_type = AddWindow.Request.BOOL
-        req.value = 0.0
-        req.min = 0.0
-        req.max = 1.0
+        widget = Widget()
+        widget.name = "Capture"
+        widget.topic = "/capture_single"
+        widget.type = Widget.PUB
+        widget.sub_type = Widget.BOOL
+        widget.value = 0.0
+        widget.min = 0.0
+        widget.max = 1.0
+        req.widgets.append(widget)
         self.future = self.add_window_cli.call_async(req)
 
         # TODO(lucasw) need to wait for v4l2ucp to be ready,
@@ -115,24 +121,27 @@ class StopMotionImGui(Node):
             # if res.values[i].type == ParameterType.PARAMETER_INTEGER:
             # elif res.values[i].type == ParameterType.PARAMETER_STRING:
 
+        req = AddWindow.Request()
+        req.name = 'camera controls'
         for key in v4l_controls.keys():
             control = v4l_controls[key]
             print(control)
-            req = AddWindow.Request()
-            req.name = control['name']
-            req.topic = control['topic']
-            req.type = AddWindow.Request.PUB
+            widget = Widget()
+            widget.name = control['name']
+            widget.topic = control['topic']
+            widget.type = Widget.PUB
             # TODO(lucasw) handle bools and menus
-            req.sub_type = AddWindow.Request.INT32
+            widget.sub_type = Widget.INT32
             # TODO(lucasw) need to get current value
-            req.value = float(control['default'])
-            req.min = float(control['min'])
-            req.max = float(control['max'])
-            print(req)
-            future = self.add_window_cli.call_async(req)
-            rclpy.spin_until_future_complete(self, future)
-            res = future.result()
-            print(res)
+            widget.value = float(control['default'])
+            widget.min = float(control['min'])
+            widget.max = float(control['max'])
+            req.widgets.append(widget)
+            # print(widget)
+        future = self.add_window_cli.call_async(req)
+        rclpy.spin_until_future_complete(self, future)
+        res = future.result()
+        print(res)
 
 def main(args=None):
     rclpy.init(args=args)
