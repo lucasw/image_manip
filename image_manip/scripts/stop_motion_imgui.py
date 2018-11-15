@@ -138,6 +138,21 @@ class StopMotionImGui(Node):
             widget.max = float(control['max'])
             req.widgets.append(widget)
             # print(widget)
+
+        control = v4l_controls[key]
+        print(control)
+        widget = Widget()
+        widget.name = "start_index"
+        widget.topic = "start_index"
+        widget.type = Widget.PUB
+        # TODO(lucasw) handle bools and menus
+        widget.sub_type = Widget.INT32
+        # TODO(lucasw) need to get current value
+        widget.value = float(0)
+        widget.min = float(0)
+        widget.max = float(256)
+        req.widgets.append(widget)
+
         future = self.add_window_cli.call_async(req)
         rclpy.spin_until_future_complete(self, future)
         res = future.result()
