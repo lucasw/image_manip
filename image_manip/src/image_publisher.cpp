@@ -28,12 +28,21 @@ public:
   ImagePublisher(const std::string image_name="")
   : Node("image_publisher"), image_name_(image_name)
   {
+    cv_bridge::CvImage cvi;
+#if 0
     image_ = cv::imread(image_name, CV_LOAD_IMAGE_GRAYSCALE);
     if (image_.empty()) {
       image_ = cv::Mat(100, 100, CV_8UC1);
     }
-    cv_bridge::CvImage cvi;
     cvi.encoding = sensor_msgs::image_encodings::MONO8;
+#else
+    image_ = cv::imread(image_name, CV_LOAD_IMAGE_COLOR);
+    if (image_.empty()) {
+      image_ = cv::Mat(100, 100, CV_8UC3);
+    }
+    cvi.encoding = sensor_msgs::image_encodings::BGR8;
+
+#endif
     cvi.image = image_;
     msg_ = cvi.toImageMsg();
     msg_->header.frame_id = frame_id_;
