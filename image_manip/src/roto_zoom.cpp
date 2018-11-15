@@ -35,6 +35,7 @@
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/image_encodings.hpp>
 #include <std_msgs/msg/float32.hpp>
+#include <std_msgs/msg/int32.hpp>
 #include <std_msgs/msg/u_int16.hpp>
 #include <map>
 #include <string>
@@ -61,6 +62,16 @@ RotoZoom() : Node("rotozoom")
     fnc = std::bind(&image_manip::RotoZoom::controlCallback, this, _1, name);
     control_subs_[name] = create_subscription<std_msgs::msg::Float32>(name, fnc);
   }
+
+  for (auto it = int_controls_.begin(); it != int_controls_.end(); ++it) {
+    std::string name = it->first;
+    // auto doesn't work
+    std::function<void(std::shared_ptr<std_msgs::msg::Int32>)> fnc;
+    fnc = std::bind(&image_manip::RotoZoom::intControlCallback, this, _1, name);
+    int_subs_[name] = create_subscription<std_msgs::msg::Int32>(name, fnc);
+  }
+
+  // TODO(lucasw) change timer when frame rate changes
   // timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0),
   //  &update, this);
 }
@@ -82,13 +93,31 @@ void controlCallback(const std_msgs::msg::Float32::SharedPtr msg,
     controls_[name] = msg->data;
     dirty_ = true;
 
-    if (controls_["frame_rate"] == 0)
+    if (controls_["frame_rate"] <= 0)
     {
       update();
     }
- }
+  }
 }
 
+void intControlCallback(const std_msgs::msg::Int32::SharedPtr msg,
+    std::string name)
+{
+  // this should never happen
+  if (int_controls_.count(name) < 1) {
+    RCLCPP_ERROR(get_logger(), "unknown control %s", name.c_str());
+    return;
+  }
+  if (int_controls_[name] != msg->data) {
+    int_controls_[name] = msg->data;
+    dirty_ = true;
+
+    if (controls_["frame_rate"] <= 0)
+    {
+      update();
+    }
+  }
+}
 void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
 {
   msg_ = msg;
@@ -138,6 +167,13 @@ void update()
   cv_bridge::CvImage cv_image;
 
   cv::Size dst_size = cv_ptr->image.size();
+  // TODO(lucasw) this probably messes up roto centering
+  if (int_controls_["width"] > 0) {
+    dst_size.width = int_controls_["width"];
+  }
+  if (int_controls_["height"] > 0) {
+    dst_size.height = int_controls_["height"];
+  }
   const float phi = controls_["phi"];
   const float theta = controls_["theta"];
   const float psi = controls_["psi"];
@@ -150,7 +186,7 @@ void update()
 
   cv::Mat transform;
   // std::cout << "phi theta psi " << phi << " " << theta << " " << psi << "\n";
-  getPerspectiveTransform(wd, ht, phi, theta, psi, off_x, off_y,
+  getPerspectiveTransform(dst_size.width, dst_size.height, phi, theta, psi, off_x, off_y,
       z, z_scale, center, transform);
 
   const int border = cv::BORDER_REFLECT;  // TRANSPARENT;
@@ -174,6 +210,11 @@ private:
   // sensor_msgs::
   bool dirty_ = false;
 
+  std::map<std::string, int> int_controls_ = {
+    {"width", 0},
+    {"height", 0},
+  };
+
   std::map<std::string, float> controls_ = {
     {"phi", 0.0},
     {"theta", 0.0},
@@ -196,6 +237,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr background_sub_;
 
   std::map<std::string, rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr> control_subs_;
+  std::map<std::string, rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr> int_subs_;
 };
 }  // namespace image_manip
 
