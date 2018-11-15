@@ -36,6 +36,7 @@
 #include <sensor_msgs/image_encodings.hpp>
 #include <std_msgs/msg/float32.hpp>
 #include <std_msgs/msg/u_int16.hpp>
+#include <map>
 #include <string>
 using std::placeholders::_1;
 
@@ -52,11 +53,14 @@ RotoZoom() : Node("rotozoom")
 
   image_sub_ = this->create_subscription<sensor_msgs::msg::Image>("image_in",
       std::bind(&image_manip::RotoZoom::imageCallback, this, _1));
-  phi_sub_ = this->create_subscription<std_msgs::msg::Float32>("phi",
-      std::bind(&image_manip::RotoZoom::phiCallback, this, _1));
-  theta_sub_ = this->create_subscription<std_msgs::msg::Float32>("theta",
-      std::bind(&image_manip::RotoZoom::thetaCallback, this, _1));
 
+  for (auto it = controls_.begin(); it != controls_.end(); ++it) {
+    std::string name = it->first;
+    // auto doesn't work
+    std::function<void(std::shared_ptr<std_msgs::msg::Float32>)> fnc;
+    fnc = std::bind(&image_manip::RotoZoom::controlCallback, this, _1, name);
+    control_subs_[name] = create_subscription<std_msgs::msg::Float32>(name, fnc);
+  }
   // timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0),
   //  &update, this);
 }
@@ -65,30 +69,24 @@ RotoZoom() : Node("rotozoom")
 {
 }
 
-void phiCallback(const std_msgs::msg::Float32::SharedPtr msg)
+// TODO(lucasw) could replace with generic callback
+void controlCallback(const std_msgs::msg::Float32::SharedPtr msg,
+    std::string name)
 {
-  if (phi_ != msg->data) {
-    phi_ = msg->data;
+  // this should never happen
+  if (controls_.count(name) < 1) {
+    RCLCPP_ERROR(get_logger(), "unknown control %s", name.c_str());
+    return;
+  }
+  if (controls_[name] != msg->data) {
+    controls_[name] = msg->data;
     dirty_ = true;
 
-    if (frame_rate_ == 0)
+    if (controls_["frame_rate"] == 0)
     {
       update();
     }
-  }
-}
-
-void thetaCallback(const std_msgs::msg::Float32::SharedPtr msg)
-{
-  if (theta_ != msg->data) {
-    theta_ = msg->data;
-    dirty_ = true;
-
-    if (frame_rate_ == 0)
-    {
-      update();
-    }
-  }
+ }
 }
 
 void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
@@ -98,7 +96,7 @@ void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
 
   // negative frame_rate is a disable
   // TODO(lucasw) or should that be the other way around?
-  if (frame_rate_ == 0)
+  if (controls_["frame_rate"] == 0)
   {
     update();
   }
@@ -140,14 +138,15 @@ void update()
   cv_bridge::CvImage cv_image;
 
   cv::Size dst_size = cv_ptr->image.size();
-  const float phi = phi_;
-  const float theta = theta_;
-  const float psi = 0.0;
-  cv::Point3f center(0, 0, 0);
-  float off_x = 0;
-  float off_y = 0;
-  const float z = 1.0;
-  const float z_scale = 0.005;
+  const float phi = controls_["phi"];
+  const float theta = controls_["theta"];
+  const float psi = controls_["psi"];
+  cv::Point3f center(
+      controls_["center_x"], controls_["center_y"], controls_["center_z"]);
+  float off_x = controls_["off_x"];
+  float off_y = controls_["off_y"];
+  const float z = controls_["z"];
+  const float z_scale = controls_["z_scale"];
 
   cv::Mat transform;
   // std::cout << "phi theta psi " << phi << " " << theta << " " << psi << "\n";
@@ -174,17 +173,29 @@ void update()
 private:
   // sensor_msgs::
   bool dirty_ = false;
-  float phi_ = 0.0;
-  float theta_ = 0.0;
-  float frame_rate_ = 0.0;
+
+  std::map<std::string, float> controls_ = {
+    {"phi", 0.0},
+    {"theta", 0.0},
+    {"psi", 0.0},
+    {"off_x", 0.0},
+    {"off_y", 0.0},
+    {"center_x", 0.0},
+    {"center_y", 0.0},
+    {"center_z", 0.0},
+    {"z", 1.0},
+    {"z_scale", 0.005},
+    {"frame_rate", 0},  // 20},
+  };
+
   unsigned int mode_ = 0;
   sensor_msgs::msg::Image::SharedPtr msg_;
   sensor_msgs::msg::Image::SharedPtr background_image_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr background_sub_;
-  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr phi_sub_;
-  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr theta_sub_;
+
+  std::map<std::string, rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr> control_subs_;
 };
 }  // namespace image_manip
 

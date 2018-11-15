@@ -12,7 +12,7 @@ def generate_launch_description():
     launches = []
     launches.append(launch_ros.actions.Node(
             package='image_manip', node_executable='image_publisher', output='screen',
-            arguments=[image_manip_dir + "/data/mosaic.jpg"]))
+            arguments=[image_manip_dir + "/data/plasma.png"]))
     launches.append(launch_ros.actions.Node(
             package='image_manip', node_executable='roto_zoom', output='screen',
             # arguments=[image_manip_dir + "/data/mosaic.jpg"])
