@@ -56,6 +56,7 @@ class StopMotionImGui(Node):
             req.widgets.append(widget)
             self.future = self.add_window_cli.call_async(req)
 
+        # Animation controls
         req = AddWindow.Request()
         widget = Widget()
         widget.name = "Capture"
@@ -66,8 +67,23 @@ class StopMotionImGui(Node):
         widget.min = 0.0
         widget.max = 1.0
         req.widgets.append(widget)
+
+        widget = Widget()
+        widget.name = "start_index"
+        widget.topic = "start_index"
+        widget.type = Widget.PUB
+        # TODO(lucasw) handle bools and menus
+        widget.sub_type = Widget.INT32
+        # TODO(lucasw) need to get current value
+        widget.value = float(0)
+        widget.min = float(0)
+        widget.max = float(256)
+        req.widgets.append(widget)
+
         self.future = self.add_window_cli.call_async(req)
 
+        # Camera controls
+        # TODO(lucasw) store this in utility library
         # TODO(lucasw) need to wait for v4l2ucp to be ready,
         # that all the params are ready.
         # But how to read parameters with rclpy
@@ -116,6 +132,8 @@ class StopMotionImGui(Node):
             field = param[2]
             if field == 'default' or field == 'max'  or field == 'min':
                 v4l_controls[name][field] = res.values[i].integer_value
+            elif field == 'menu_items':
+                v4l_controls[name][field] = res.values[i].string_array_value
             else:
                 v4l_controls[name][field] = res.values[i].string_value
             # if res.values[i].type == ParameterType.PARAMETER_INTEGER:
@@ -131,7 +149,11 @@ class StopMotionImGui(Node):
             widget.topic = control['topic']
             widget.type = Widget.PUB
             # TODO(lucasw) handle bools and menus
-            widget.sub_type = Widget.INT32
+            if control['type'] == 'menu':
+                widget.items = control['menu_items']
+                widget.sub_type = Widget.MENU
+            else:
+                widget.sub_type = Widget.INT32
             # TODO(lucasw) need to get current value
             widget.value = float(control['default'])
             widget.min = float(control['min'])
@@ -139,19 +161,8 @@ class StopMotionImGui(Node):
             req.widgets.append(widget)
             # print(widget)
 
-        control = v4l_controls[key]
-        print(control)
-        widget = Widget()
-        widget.name = "start_index"
-        widget.topic = "start_index"
-        widget.type = Widget.PUB
-        # TODO(lucasw) handle bools and menus
-        widget.sub_type = Widget.INT32
-        # TODO(lucasw) need to get current value
-        widget.value = float(0)
-        widget.min = float(0)
-        widget.max = float(256)
-        req.widgets.append(widget)
+        # control = v4l_controls[key]
+        # print(control)
 
         future = self.add_window_cli.call_async(req)
         rclpy.spin_until_future_complete(self, future)
