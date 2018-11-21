@@ -32,6 +32,8 @@
 #include <image_manip/utility.h>
 #include <opencv2/imgproc.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <rcl_interfaces/msg/parameter_event.hpp>
+#include <rcl_interfaces/msg/parameter_type.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/image_encodings.hpp>
 #include <std_msgs/msg/float32.hpp>
@@ -71,13 +73,31 @@ RotoZoom() : Node("rotozoom")
     int_subs_[name] = create_subscription<std_msgs::msg::Int32>(name, fnc);
   }
 
-  // TODO(lucasw) change timer when frame rate changes
-  // timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0),
-  //  &update, this);
+  set_parameter_if_not_set("frame_rate", frame_rate_);
+  get_parameter_or("frame_rate", frame_rate_, frame_rate_);
+  updateTimer();
+
+  parameters_client_ = std::make_shared<rclcpp::AsyncParametersClient>(this);
+  param_sub_ = parameters_client_->on_parameter_event(
+      std::bind(&RotoZoom::onParameterEvent, this, _1));
 }
 
 ~RotoZoom()
 {
+}
+
+void updateTimer()
+{
+  if (frame_rate_ <= 0) {
+    RCLCPP_INFO(get_logger(), "Only updating when controls change %f", frame_rate_);
+    timer_ = nullptr;
+    return;
+  }
+  const long int period_ms = 1000.0 / frame_rate_;
+  RCLCPP_INFO(get_logger(), "Updating at fixed rate %f %d", frame_rate_, period_ms);
+  timer_ = create_wall_timer(
+      std::chrono::milliseconds(period_ms),
+      std::bind(&RotoZoom::update, this));
 }
 
 // TODO(lucasw) could replace with generic callback
@@ -93,8 +113,7 @@ void controlCallback(const std_msgs::msg::Float32::SharedPtr msg,
     controls_[name] = msg->data;
     dirty_ = true;
 
-    if (controls_["frame_rate"] <= 0)
-    {
+    if (frame_rate_ <= 0) {
       update();
     }
   }
@@ -112,8 +131,7 @@ void intControlCallback(const std_msgs::msg::Int32::SharedPtr msg,
     int_controls_[name] = msg->data;
     dirty_ = true;
 
-    if (controls_["frame_rate"] <= 0)
-    {
+    if (frame_rate_ <= 0) {
       update();
     }
   }
@@ -125,8 +143,7 @@ void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
 
   // negative frame_rate is a disable
   // TODO(lucasw) or should that be the other way around?
-  if (controls_["frame_rate"] == 0)
-  {
+  if (frame_rate_ <= 0) {
     update();
   }
 }
@@ -226,7 +243,6 @@ private:
     {"center_z", 0.0},
     {"z", 1.0},
     {"z_scale", 0.005},
-    {"frame_rate", 0},  // 20},
   };
 
   unsigned int mode_ = 0;
@@ -238,6 +254,36 @@ private:
 
   std::map<std::string, rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr> control_subs_;
   std::map<std::string, rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr> int_subs_;
+
+  double frame_rate_ = 0.0;
+  rclcpp::TimerBase::SharedPtr timer_;
+
+  rclcpp::AsyncParametersClient::SharedPtr parameters_client_;
+  rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent>::SharedPtr param_sub_;
+
+  void onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPtr event)
+  {
+    // auto -> ParameterValue
+    for (auto & changed_parameter : event->changed_parameters) {
+      const std::string name = changed_parameter.name;
+      if (name == "frame_rate")
+      {
+        if (changed_parameter.value.type != rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE) {
+          RCLCPP_WARN(get_logger(), "Wrong type %s %d",
+              name, changed_parameter.value.type);
+          continue;
+        }
+        frame_rate_ = changed_parameter.value.double_value;
+        dirty_ = true;
+        updateTimer();
+      } else {
+        // TODO(lucasw) maybe should rescan controls, or provide that function elsewhere
+        RCLCPP_WARN(get_logger(), "No %s in controls", name.c_str());
+        continue;
+      }  // is expected parameter
+    }  // loop through changed parameters
+  }  // parameter event handler
+
 };
 }  // namespace image_manip
 
