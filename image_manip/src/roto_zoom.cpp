@@ -264,6 +264,10 @@ private:
   void onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPtr event)
   {
     // auto -> ParameterValue
+    for (auto & parameter : event->new_parameters) {
+      const std::string name = parameter.name;
+      RCLCPP_WARN(get_logger(), "New %s parameter", name.c_str());
+    }
     for (auto & changed_parameter : event->changed_parameters) {
       const std::string name = changed_parameter.name;
       if (name == "frame_rate")
@@ -278,7 +282,7 @@ private:
         updateTimer();
       } else {
         // TODO(lucasw) maybe should rescan controls, or provide that function elsewhere
-        RCLCPP_WARN(get_logger(), "No %s in controls", name.c_str());
+        RCLCPP_WARN(get_logger(), "No %s parameter", name.c_str());
         continue;
       }  // is expected parameter
     }  // loop through changed parameters
