@@ -89,6 +89,9 @@ private:
   rclcpp::Subscription<std_msgs::msg::UInt16>::SharedPtr start_index_sub_;
   void startIndexCallback(const std_msgs::msg::UInt16::SharedPtr msg)
   {
+    if (start_index_ != msg->data) {
+      RCLCPP_INFO(get_logger(), "new start index %d", start_index_);
+    }
     start_index_ = msg->data;
     dirty_ = true;
   }

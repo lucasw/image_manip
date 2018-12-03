@@ -58,6 +58,7 @@ class StopMotionImGui(Node):
 
         # Animation controls
         req = AddWindow.Request()
+        req.name = 'capture controls'
         widget = Widget()
         widget.name = "Capture"
         widget.topic = "/capture_single"
@@ -73,7 +74,7 @@ class StopMotionImGui(Node):
         widget.topic = "start_index"
         widget.type = Widget.PUB
         # TODO(lucasw) handle bools and menus
-        widget.sub_type = Widget.INT32
+        widget.sub_type = Widget.UINT16
         # TODO(lucasw) need to get current value
         widget.value = float(0)
         widget.min = float(0)
