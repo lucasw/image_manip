@@ -45,11 +45,12 @@ class ColorImGui(Node):
                 break
 
     def run(self):
-        images = ['image']
         req = AddWindow.Request()
-        req.name = 'capture controls'
+        req.name = 'gen color controls'
 
-        for image in images:
+        # for image in ['image']:
+        if True:
+            image = 'image'
             widget = Widget()
             widget.name = image + " viewer"
             widget.topic = "/" + image
@@ -59,6 +60,7 @@ class ColorImGui(Node):
         widget = Widget()
         widget.name = 'frame rate'
         widget.topic = 'gen_color'
+        widget.items.append('frame_rate')
         widget.type = Widget.PARAM
         widget.sub_type = Widget.FLOAT32
         widget.value = 1.0
@@ -78,7 +80,6 @@ class ColorImGui(Node):
             widget.min = 0.0
             widget.max = 255.0
             req.widgets.append(widget)
-            self.future = self.add_window_cli.call_async(req)
 
         for channel in ['width', 'height']:
             widget = Widget()
@@ -91,7 +92,6 @@ class ColorImGui(Node):
             widget.min = 1.0
             widget.max = 1024.0
             req.widgets.append(widget)
-            self.future = self.add_window_cli.call_async(req)
 
         future = self.add_window_cli.call_async(req)
         rclpy.spin_until_future_complete(self, future)
