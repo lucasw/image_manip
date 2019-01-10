@@ -44,8 +44,10 @@ protected:
   bool dirty_ = true;
   cv::Mat image_;
 
-  rcl_interfaces::msg::SetParametersResult paramChangeCallback(std::vector<rclcpp::Parameter> parameters);
 #if 0
+  rcl_interfaces::msg::SetParametersResult paramChangeCallback(std::vector<rclcpp::Parameter> parameters);
+#endif
+#if 1
   rclcpp::AsyncParametersClient::SharedPtr parameters_client_;
   rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent>::SharedPtr param_sub_;
   void onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPtr event);
@@ -73,8 +75,10 @@ Color::Color() : Node("color")
 
   pub_ = create_publisher<sensor_msgs::msg::Image>("image");
 
-  this->register_param_change_callback(std::bind(&Color::paramChangeCallback, this, _1));
 #if 0
+  this->register_param_change_callback(std::bind(&Color::paramChangeCallback, this, _1));
+#endif
+#if 1
   parameters_client_ = std::make_shared<rclcpp::AsyncParametersClient>(this);
   param_sub_ = parameters_client_->on_parameter_event(
       std::bind(&Color::onParameterEvent, this, _1));
@@ -117,18 +121,28 @@ void Color::pubImage()
   pub_->publish(cv_image.toImageMsg());
 }
 
+#if 0
 rcl_interfaces::msg::SetParametersResult Color::paramChangeCallback(std::vector<rclcpp::Parameter> parameters)
 {
-  (void) parameters;
+  std::cout << parameters.size() << " ";
+  for (auto param : parameters) {
+    std::cout << param.get_name() << " ";
+  }
   rcl_interfaces::msg::SetParametersResult result;
   dirty_ = true;
   result.successful = true;
   return result;
 }
+#endif
 
-#if 0
+#if 1
 void Color::onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPtr event)
 {
+  const std::string full_name = std::string(get_namespace()) + std::string(get_name());
+  if (event->node != full_name) {
+    return;
+  }
+
   // auto -> ParameterValue
   for (auto & parameter : event->new_parameters) {
     const std::string name = parameter.name;
