@@ -44,9 +44,13 @@ protected:
   bool dirty_ = true;
   cv::Mat image_;
 
+  rcl_interfaces::msg::SetParametersResult paramChangeCallback(std::vector<rclcpp::Parameter> parameters);
+#if 0
   rclcpp::AsyncParametersClient::SharedPtr parameters_client_;
   rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent>::SharedPtr param_sub_;
   void onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPtr event);
+#endif
+
 public:
   Color();
 };
@@ -69,9 +73,12 @@ Color::Color() : Node("color")
 
   pub_ = create_publisher<sensor_msgs::msg::Image>("image");
 
+  this->register_param_change_callback(std::bind(&Color::paramChangeCallback, this, _1));
+#if 0
   parameters_client_ = std::make_shared<rclcpp::AsyncParametersClient>(this);
   param_sub_ = parameters_client_->on_parameter_event(
       std::bind(&Color::onParameterEvent, this, _1));
+#endif
 
   updateTimer();
   // TODO(lucasw) get width height
@@ -92,6 +99,12 @@ void Color::updateTimer()
 void Color::pubImage()
 {
   if (dirty_ || image_.empty()) {
+    get_parameter_or("red", red_, red_);
+    get_parameter_or("green", green_, green_);
+    get_parameter_or("blue", blue_, blue_);
+    get_parameter_or("width", width_, width_);
+    get_parameter_or("height", height_, height_);
+
     image_ = cv::Mat(cv::Size(width_, height_), CV_8UC3);
     image_ = cv::Scalar(red_, green_, blue_);
     dirty_ = false;
@@ -104,6 +117,16 @@ void Color::pubImage()
   pub_->publish(cv_image.toImageMsg());
 }
 
+rcl_interfaces::msg::SetParametersResult Color::paramChangeCallback(std::vector<rclcpp::Parameter> parameters)
+{
+  (void) parameters;
+  rcl_interfaces::msg::SetParametersResult result;
+  dirty_ = true;
+  result.successful = true;
+  return result;
+}
+
+#if 0
 void Color::onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPtr event)
 {
   // auto -> ParameterValue
@@ -148,6 +171,7 @@ void Color::onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPt
     }  // is expected parameter
   }  // loop through changed parameters
 }  // parameter event handler
+#endif
 
 int main(int argc, char** argv)
 {
