@@ -118,6 +118,8 @@ void Color::pubImage()
   cv_image.header.stamp = now();  // or reception time of original message?
   cv_image.image = image_;
   cv_image.encoding = "rgb8";
+  // TODO(lucasw) cache the converted image message and only call toImageMsg() above
+  // in if dirty.
   pub_->publish(cv_image.toImageMsg());
 }
 
@@ -160,23 +162,7 @@ void Color::onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPt
       }
     }
     if (changed_parameter.value.type == rcl_interfaces::msg::ParameterType::PARAMETER_INTEGER) {
-      const int value = changed_parameter.value.integer_value;
       dirty_ = true;
-      if (name == "red") {
-        red_ = value;
-      } else if (name == "green") {
-        green_ = value;
-      } else if (name == "blue") {
-        blue_ = value;
-      } else if (name == "width") {
-        width_ = value;
-      } else if (name == "height") {
-        height_ = value;
-      } else {
-        RCLCPP_WARN(get_logger(), "No '%s' parameter or mismatching type %d",
-          name.c_str(), changed_parameter.value.type);
-        dirty_ = false;
-      }
     } else {
       // TODO(lucasw) maybe should rescan controls, or provide that function elsewhere
       RCLCPP_WARN(get_logger(), "No '%s' parameter or mismatching type %d",
