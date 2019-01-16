@@ -125,6 +125,7 @@ install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(PROGRAMS
   scripts/stop_motion_imgui.py
   scripts/color_imgui.py
+  scripts/setup_roto_gui.py
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)

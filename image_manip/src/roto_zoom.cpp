@@ -65,6 +65,7 @@ RotoZoom() : Node("rotozoom")
     control_subs_[name] = create_subscription<std_msgs::msg::Float32>(name, fnc);
   }
 
+#if 0
   for (auto it = int_controls_.begin(); it != int_controls_.end(); ++it) {
     std::string name = it->first;
     // auto doesn't work
@@ -72,18 +73,39 @@ RotoZoom() : Node("rotozoom")
     fnc = std::bind(&image_manip::RotoZoom::intControlCallback, this, _1, name);
     int_subs_[name] = create_subscription<std_msgs::msg::Int32>(name, fnc);
   }
+#endif
 
   set_parameter_if_not_set("frame_rate", frame_rate_);
   get_parameter_or("frame_rate", frame_rate_, frame_rate_);
   updateTimer();
 
-  parameters_client_ = std::make_shared<rclcpp::AsyncParametersClient>(this);
-  param_sub_ = parameters_client_->on_parameter_event(
-      std::bind(&RotoZoom::onParameterEvent, this, _1));
+  set_parameter_if_not_set("width", width_);
+  get_parameter_or("width", width_, width_);
+  set_parameter_if_not_set("height", height_);
+  get_parameter_or("height", height_, height_);
+
+  register_param_change_callback(
+      std::bind(&RotoZoom::onParameterChange, this, _1));
 }
 
 ~RotoZoom()
 {
+}
+
+rcl_interfaces::msg::SetParametersResult onParameterChange(
+    std::vector<rclcpp::Parameter> parameters)
+{
+  for (auto param : parameters) {
+    if (param.get_name() == "frame_rate") {
+      frame_rate_ = param.as_double();
+      updateTimer();
+    }
+  }
+  dirty_ = true;
+
+  auto result = rcl_interfaces::msg::SetParametersResult();
+  result.successful = true;
+  return result;
 }
 
 void updateTimer()
@@ -98,6 +120,12 @@ void updateTimer()
   timer_ = create_wall_timer(
       std::chrono::milliseconds(period_ms),
       std::bind(&RotoZoom::update, this));
+
+  // this governs how quickly this will respond to gui controls,
+  // TODO(lucasw) combine it with the regular timer
+  timer2_ = create_wall_timer(
+      std::chrono::milliseconds(100),
+      std::bind(&RotoZoom::update2, this));
 }
 
 // TODO(lucasw) could replace with generic callback
@@ -112,13 +140,10 @@ void controlCallback(const std_msgs::msg::Float32::SharedPtr msg,
   if (controls_[name] != msg->data) {
     controls_[name] = msg->data;
     dirty_ = true;
-
-    if (frame_rate_ <= 0) {
-      update();
-    }
   }
 }
 
+#if 0
 void intControlCallback(const std_msgs::msg::Int32::SharedPtr msg,
     std::string name)
 {
@@ -136,6 +161,8 @@ void intControlCallback(const std_msgs::msg::Int32::SharedPtr msg,
     }
   }
 }
+#endif
+
 void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
 {
   msg_ = msg;
@@ -148,8 +175,18 @@ void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
   }
 }
 
+// having this doesn't really make sense, but leave it for now
+void update2()
+{
+  if (frame_rate_ <= 0.0) {
+    update();
+  }
+}
+
 void update()
 {
+  const auto t0 = now();
+
   if (!dirty_)
     return;
 
@@ -185,12 +222,11 @@ void update()
 
   cv::Size dst_size = cv_ptr->image.size();
   // TODO(lucasw) this probably messes up roto centering
-  if (int_controls_["width"] > 0) {
-    dst_size.width = int_controls_["width"];
-  }
-  if (int_controls_["height"] > 0) {
-    dst_size.height = int_controls_["height"];
-  }
+  get_parameter_or("width", width_, width_);
+  dst_size.width = width_;
+  get_parameter_or("height", height_, height_);
+  dst_size.height = height_;
+
   const float phi = controls_["phi"];
   const float theta = controls_["theta"];
   const float psi = controls_["psi"];
@@ -206,13 +242,15 @@ void update()
   getPerspectiveTransform(dst_size.width, dst_size.height, phi, theta, psi, off_x, off_y,
       z, z_scale, center, transform);
 
+  // TODO(lucasw) parameter to set this
   const int border = cv::BORDER_REFLECT;  // TRANSPARENT;
   // TODO(lucasw) don't waste time creating an empty image if the border
   // type will overwrite it all anyhow
   cv_image.image = cv::Mat(dst_size, cv_ptr->image.type(), cv::Scalar::all(0));
   cv::warpPerspective(cv_ptr->image, cv_image.image, transform,
                       dst_size,
-                      cv::INTER_NEAREST, border);
+                      cv::INTER_NEAREST,  // TODO(lucasw) parameter to set this
+                      border);
 
   cv_image.header = cv_ptr->header;  // or reception time of original message?
   cv_image.encoding = encoding;
@@ -221,16 +259,20 @@ void update()
   pub_->publish(cv_image.toImageMsg());
 
   dirty_ = false;
+
+  const auto diff = now() - t0;
+  std::cout << "update time " << diff.nanoseconds() / 1e9 << "\n";
 }
 
 private:
-  // sensor_msgs::
-  bool dirty_ = false;
+  bool dirty_ = true;
 
-  std::map<std::string, int> int_controls_ = {
-    {"width", 0},
-    {"height", 0},
-  };
+  // these shadow parameters
+  int width_ = 256;
+  int height_ = 256;
+  double frame_rate_ = 0.0;
+  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::TimerBase::SharedPtr timer2_;
 
   std::map<std::string, float> controls_ = {
     {"phi", 0.0},
@@ -254,40 +296,6 @@ private:
 
   std::map<std::string, rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr> control_subs_;
   std::map<std::string, rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr> int_subs_;
-
-  double frame_rate_ = 0.0;
-  rclcpp::TimerBase::SharedPtr timer_;
-
-  rclcpp::AsyncParametersClient::SharedPtr parameters_client_;
-  rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent>::SharedPtr param_sub_;
-
-  void onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPtr event)
-  {
-    // auto -> ParameterValue
-    for (auto & parameter : event->new_parameters) {
-      const std::string name = parameter.name;
-      RCLCPP_WARN(get_logger(), "New %s parameter", name.c_str());
-    }
-    for (auto & changed_parameter : event->changed_parameters) {
-      const std::string name = changed_parameter.name;
-      if (name == "frame_rate")
-      {
-        if (changed_parameter.value.type != rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE) {
-          RCLCPP_WARN(get_logger(), "Wrong type %s %d",
-              name, changed_parameter.value.type);
-          continue;
-        }
-        frame_rate_ = changed_parameter.value.double_value;
-        dirty_ = true;
-        updateTimer();
-      } else {
-        // TODO(lucasw) maybe should rescan controls, or provide that function elsewhere
-        RCLCPP_WARN(get_logger(), "No %s parameter", name.c_str());
-        continue;
-      }  // is expected parameter
-    }  // loop through changed parameters
-  }  // parameter event handler
-
 };
 }  // namespace image_manip
 
