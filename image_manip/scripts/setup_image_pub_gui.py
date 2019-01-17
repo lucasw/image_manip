@@ -61,7 +61,7 @@ class SetupGui(Node):
     def run(self):
         self.window_name = "roto zoom controls"
         self.add_images()
-        self.add_controls()
+        # self.add_controls()
         # self.add_tf_widgets()
 
     def add_tf_widgets(self):
@@ -98,8 +98,7 @@ class SetupGui(Node):
         req = AddWindow.Request()
         req.name = "images"
 
-        image_topics = ['image_in', 'background_image',
-                        'image_out']
+        image_topics = ['image_raw']
         # image_topics = []
 
         for topic in image_topics:
