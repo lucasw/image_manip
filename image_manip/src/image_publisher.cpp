@@ -42,7 +42,7 @@ public:
     if (image_.empty()) {
       RCLCPP_INFO(get_logger(), "using blank image because imread failed '%s'",
           image_name_.c_str());
-      image_ = cv::Mat(100, 100, CV_8UC3);
+      image_ = cv::Mat(500, 500, CV_8UC3);
     } else {
       RCLCPP_INFO(get_logger(), "Loaded image '%s' %d x %d",
           image_name_.c_str(), image_.rows, image_.cols);
