@@ -32,13 +32,13 @@ protected:
   rclcpp::TimerBase::SharedPtr timer_;
   void pubImage();
 
-  int width_ = 32;
-  int height_ = 32;
+  int width_ = 1024;
+  int height_ = 1024;
   int red_ = 255;
   int green_ = 255;
   int blue_= 255;
 
-  double frame_rate_ = 1.0;
+  double frame_rate_ = 20.0;
   void updateTimer();
 
   bool dirty_ = true;
@@ -71,10 +71,12 @@ Color::Color() : Node("color")
   get_parameter_or("width", width_, width_);
   set_parameter_if_not_set("height", height_);
   get_parameter_or("height", height_, height_);
-  // TODO(lucasw) get update rate
+  set_parameter_if_not_set("frame_rate", frame_rate_);
+  get_parameter_or("frame_rate", frame_rate_, frame_rate_);
 
   pub_ = create_publisher<sensor_msgs::msg::Image>("image");
 
+  std::cout << width_ << " x " << height_ << "\n";
 #if 0
   this->register_param_change_callback(std::bind(&Color::paramChangeCallback, this, _1));
 #endif
@@ -85,19 +87,19 @@ Color::Color() : Node("color")
 #endif
 
   updateTimer();
-  // TODO(lucasw) get width height
-  if (frame_rate_ > 0.0) {
-    int period_ms = 1000.0 / frame_rate_;
-    timer_ = create_wall_timer(std::chrono::milliseconds(period_ms),
-        std::bind(&Color::pubImage, this));
-  }
 }
 
 void Color::updateTimer()
 {
-  int period_ms = 1000.0 / frame_rate_;
-  timer_ = create_wall_timer(std::chrono::milliseconds(period_ms),
-      std::bind(&Color::pubImage, this));
+  if (frame_rate_ > 0.0) {
+    int period_ms = 1000.0 / frame_rate_;
+    std::cout << "frame rate " << frame_rate_ << ", period ms " << period_ms << "\n";
+    timer_ = create_wall_timer(std::chrono::milliseconds(period_ms),
+        std::bind(&Color::pubImage, this));
+  } else {
+    std::cout << "setting frame rate to 0.0\n";
+    timer_ = nullptr;
+  }
 }
 
 void Color::pubImage()
