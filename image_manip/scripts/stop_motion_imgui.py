@@ -45,10 +45,18 @@ class StopMotionImGui(Node):
                 break
 
     def run(self):
+        width = 600.0
+        height = 990.0 * 0.5
         images = ['diff_image', 'blur_image', 'live_image_small', 'anim']
-        for image in images:
+        for i in range(len(images)):
+            image = images[i]
             req = AddWindow.Request()
             req.name = image
+            req.init = True
+            req.position.x = 400.0 + width * (i % 2)
+            req.position.y = float(int(i / 2) * height)
+            req.size.x = width
+            req.size.y = height
             widget = Widget()
             widget.name = image + " viewer"
             widget.topic = "/" + image
@@ -59,6 +67,11 @@ class StopMotionImGui(Node):
         # Animation controls
         req = AddWindow.Request()
         req.name = 'capture controls'
+        req.init = True
+        req.position.x = 0.0
+        req.position.y = 0.0
+        req.size.x = 400.0
+        req.size.y = 100.0
         widget = Widget()
         widget.name = "Capture"
         widget.topic = "/capture_single"
@@ -142,6 +155,11 @@ class StopMotionImGui(Node):
 
         req = AddWindow.Request()
         req.name = 'camera controls'
+        req.init = True
+        req.position.x = 0.0
+        req.position.y = 100.0
+        req.size.x = 400.0
+        req.size.y = 700.0
         for key in v4l_controls.keys():
             control = v4l_controls[key]
             print(control)

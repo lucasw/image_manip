@@ -224,8 +224,8 @@ def generate_launch_description():
 
     imgui_params = dict(
         name = 'stop motion animation',
-        width = 1900,
-        height = 900,
+        width = 1920,
+        height = 990,
         )
     node = launch_ros.actions.Node(
             package='imgui_ros',
