@@ -52,10 +52,18 @@ Resize() : Node("resize")
 
   get_parameter_or("frame_rate", frame_rate_, frame_rate_);
   get_parameter_or("width", width_, width_);
+  set_parameter_if_not_set("width", width_);
   get_parameter_or("height", height_, height_);
+  set_parameter_if_not_set("height", height_);
+  get_parameter_or("mode", mode_, mode_);
+  set_parameter_if_not_set("mode", mode_);
+
+  register_param_change_callback(std::bind(&Resize::paramChangeCallback, this, _1));
 
   image_sub_ = this->create_subscription<sensor_msgs::msg::Image>("image_in",
       std::bind(&image_manip::Resize::imageCallback, this, _1));
+
+  // TODO(lucasw) are these needed vs. just parameters?
   width_sub_ = this->create_subscription<std_msgs::msg::UInt16>("width",
       std::bind(&image_manip::Resize::widthCallback, this, _1));
   height_sub_ = this->create_subscription<std_msgs::msg::UInt16>("height",
@@ -72,6 +80,28 @@ Resize() : Node("resize")
 
 ~Resize()
 {
+}
+
+rcl_interfaces::msg::SetParametersResult paramChangeCallback(std::vector<rclcpp::Parameter> parameters)
+{
+  // TODO(lucasw) look at parameters
+  (void)parameters;
+
+  get_parameter_or("width", width_, width_);
+  get_parameter_or("height", height_, height_);
+  get_parameter_or("mode", mode_, mode_);
+
+  if (mode_ > 2) {
+    mode_ = 2;
+  }
+  if (mode_ < 0) {
+    mode_ = 0;
+  }
+
+  rcl_interfaces::msg::SetParametersResult result;
+  dirty_ = true;
+  result.successful = true;
+  return result;
 }
 
 void widthCallback(const std_msgs::msg::UInt16::SharedPtr msg)
@@ -159,6 +189,7 @@ void update()
 
   cv_image.header = cv_ptr->header;  // or reception time of original message?
   cv_image.encoding = encoding;
+  // TODO(lucasw) expensive image copy
   pub_->publish(cv_image.toImageMsg());
 
   dirty_ = false;
@@ -170,7 +201,7 @@ private:
   int width_ = 0;
   int height_ = 0;
   double frame_rate_ = 0.0;
-  unsigned int mode_ = 0;
+  int mode_ = 0;
   int interpolate_mode_ = cv::INTER_NEAREST;
   sensor_msgs::msg::Image::SharedPtr msg_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
