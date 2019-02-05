@@ -58,6 +58,8 @@ class StopMotionImGui(Node):
             req.size.x = width
             req.size.y = height
             req.scroll_y = 1.0
+            req.no_move = True
+            req.no_decoration = True
             widget = Widget()
             widget.name = image + " viewer"
             widget.topic = "/" + image
