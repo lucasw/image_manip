@@ -64,6 +64,7 @@ class StopMotionImGui(Node):
             widget.name = image + " viewer"
             widget.topic = "/" + image
             widget.type = Widget.IMAGE
+            widget.enable_info = False
             req.widgets.append(widget)
             self.future = self.add_window_cli.call_async(req)
             rclpy.spin_until_future_complete(self, self.future)
