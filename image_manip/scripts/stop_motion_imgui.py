@@ -66,6 +66,8 @@ class StopMotionImGui(Node):
             widget.type = Widget.IMAGE
             req.widgets.append(widget)
             self.future = self.add_window_cli.call_async(req)
+            rclpy.spin_until_future_complete(self, self.future)
+            res = self.future.result()
 
         # Animation controls
         req = AddWindow.Request()
@@ -98,6 +100,8 @@ class StopMotionImGui(Node):
         req.widgets.append(widget)
 
         self.future = self.add_window_cli.call_async(req)
+        rclpy.spin_until_future_complete(self, self.future)
+        res = self.future.result()
 
         # Camera controls
         # TODO(lucasw) store this in utility library
