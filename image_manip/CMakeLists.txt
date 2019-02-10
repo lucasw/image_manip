@@ -18,14 +18,42 @@ endif()
 # find dependencies
 find_package(OpenCV REQUIRED)
 find_package(ament_cmake REQUIRED)
+find_package(class_loader REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(example_interfaces REQUIRED)
+find_package(internal_pub_sub REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rcutils)
 find_package(rmw REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 
+include_directories(
+  ${OpenCV_INCLUDE_DIRECTORIES}
+  include
+)
+
+add_library(imagemanip SHARED
+  src/iir_image.cpp
+  src/utility.cpp
+)
+ament_target_dependencies(imagemanip
+  "builtin_interfaces"
+  "class_loader"
+  "cv_bridge"
+  "internal_pub_sub"
+  "rclcpp"
+  "sensor_msgs"
+  "std_msgs"
+)
+install(TARGETS
+  imagemanip
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
+####################################################################
 # TODO(lucasw) make a cmake macro and a list of all the cpp files
 add_executable(image_publisher src/image_publisher.cpp)
 ament_target_dependencies(image_publisher
@@ -42,9 +70,6 @@ ament_target_dependencies(resize
   "rclcpp"
   "sensor_msgs"
   "std_msgs")
-include_directories(resize
-  ${OpenCV_INCLUDE_DIRECTORIES}
-  include)
 target_link_libraries(resize
   ${OpenCV_LIBRARIES}
   ${cv_bridge_LIBRARIES})
@@ -56,9 +81,6 @@ ament_target_dependencies(roto_zoom
   "rclcpp"
   "sensor_msgs"
   "std_msgs")
-include_directories(roto_zoom
-  ${OpenCV_INCLUDE_DIRECTORIES}
-  include)
 target_link_libraries(roto_zoom
   ${OpenCV_LIBRARIES}
   ${cv_bridge_LIBRARIES})
@@ -70,9 +92,6 @@ ament_target_dependencies(color
   "rclcpp"
   "sensor_msgs"
   "std_msgs")
-include_directories(color
-  ${OpenCV_INCLUDE_DIRECTORIES}
-  include)
 target_link_libraries(color
   ${OpenCV_LIBRARIES}
   ${cv_bridge_LIBRARIES})
@@ -84,26 +103,14 @@ ament_target_dependencies(image_deque
   "rclcpp"
   "sensor_msgs"
   "std_msgs")
-include_directories(image_deque
-  ${OpenCV_INCLUDE_DIRECTORIES}
-  include)
 target_link_libraries(image_deque
   ${OpenCV_LIBRARIES}
   ${cv_bridge_LIBRARIES})
 install(TARGETS image_deque DESTINATION lib/${PROJECT_NAME})
 
-add_executable(iir_image src/iir_image.cpp src/utility.cpp)
-ament_target_dependencies(iir_image
-  "cv_bridge"
-  "rclcpp"
-  "sensor_msgs"
-  "std_msgs")
-include_directories(iir_image
-  ${OpenCV_INCLUDE_DIRECTORIES}
-  include)
-target_link_libraries(iir_image
-  ${OpenCV_LIBRARIES}
-  ${cv_bridge_LIBRARIES})
+add_executable(iir_image src/nodes/iir_image.cpp)
+target_link_libraries(iir_image imagemanip)
+ament_target_dependencies(iir_image rclcpp)
 install(TARGETS iir_image DESTINATION lib/${PROJECT_NAME})
 
 add_executable(save_image src/save_image.cpp src/utility.cpp)
@@ -112,9 +119,6 @@ ament_target_dependencies(save_image
   "rclcpp"
   "sensor_msgs"
   "std_msgs")
-include_directories(save_image
-  ${OpenCV_INCLUDE_DIRECTORIES}
-  include)
 target_link_libraries(save_image
   ${OpenCV_LIBRARIES}
   ${cv_bridge_LIBRARIES})

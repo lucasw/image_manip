@@ -30,6 +30,7 @@
 
 #include <cv_bridge/cv_bridge.h>
 #include <deque>
+#include <image_manip/iir_image.hpp>
 #include <image_manip/utility.h>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
@@ -41,38 +42,8 @@ using std::placeholders::_1;
 namespace image_manip
 {
 
-class IIRImage : public rclcpp::Node
-{
-public:
-  IIRImage();
-  ~IIRImage();
-  void init();
-private:
-  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
-  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_;
-
-  std::vector<rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr> image_subs_;
-
-  double frame_rate_ = 20;
-  std::vector<double> b_coeffs_;
-  // faster to leave this empty, which amounts to a_coeffs_ = {1.0};
-  std::vector<double> a_coeffs_;
-
-  bool use_time_sequence_ = false;
-
-  rclcpp::TimerBase::SharedPtr timer_;
-  void update();
-
-  std::deque<sensor_msgs::msg::Image::SharedPtr> in_images_;
-  std::deque<cv_bridge::CvImageConstPtr> in_cv_images_;
-  std::deque<cv::Mat> out_frames_;
-  bool dirty_ = false;
-
-  void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
-  void imagesCallback(const sensor_msgs::msg::Image::SharedPtr msg, const size_t index);
-};
-
-IIRImage::IIRImage() : Node("iir_image")
+IIRImage::IIRImage(std::shared_ptr<internal_pub_sub::Core> core) :
+    Node("iir_image"), core_(core)
 {
 }
 
@@ -154,7 +125,7 @@ void IIRImage::update()
   cv_image.image = out_frame;
   cv_image.encoding = "rgb8";
   sensor_msgs::msg::Image::SharedPtr out_image(cv_image.toImageMsg());
-  pub_->publish(out_image);
+  image_pub_->publish(out_image);
 
   out_frames_.push_front(out_frame);
   if (out_frames_.size() > a_coeffs_.size())
@@ -177,10 +148,6 @@ void IIRImage::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
   }
 
   dirty_ = true;
-  // negative frame_rate is a disable
-  // TODO(lucasw) or should that be the other way around?
-  if (frame_rate_ == 0)
-    update();
 }
 
 void IIRImage::imagesCallback(const sensor_msgs::msg::Image::SharedPtr msg, const size_t index)
@@ -196,7 +163,8 @@ void IIRImage::imagesCallback(const sensor_msgs::msg::Image::SharedPtr msg, cons
 
 void IIRImage::init()
 {
-  pub_ = create_publisher<sensor_msgs::msg::Image>("image_out");
+  // pub_ = create_publisher<sensor_msgs::msg::Image>("image_out");
+  image_pub_ = core_->get_create_publisher("image_out", shared_from_this());
 
   get_parameter_or("use_time_sequence", use_time_sequence_, use_time_sequence_);
 
@@ -238,7 +206,9 @@ void IIRImage::init()
   }
   else
   {
-    sub_ = create_subscription<sensor_msgs::msg::Image>("image_in",
+    // sub_ = create_subscription<sensor_msgs::msg::Image>("image_in",
+    //     std::bind(&IIRImage::imageCallback, this, _1));
+    image_sub_ = core_->create_subscription("image_in",
         std::bind(&IIRImage::imageCallback, this, _1));
   }
 
@@ -250,17 +220,6 @@ void IIRImage::init()
 
 }  // namespace image_manip
 
-int main(int argc, char * argv[])
-{
-  rclcpp::init(argc, argv);
+#include <class_loader/register_macro.hpp>
 
-  // Force flush of the stdout buffer.
-  // This ensures a correct sync of all prints
-  // even when executed simultaneously within a launch file.
-  setvbuf(stdout, NULL, _IONBF, BUFSIZ);
-  auto iir_image = std::make_shared<image_manip::IIRImage>();
-  iir_image->init();
-  rclcpp::spin(iir_image);
-  rclcpp::shutdown();
-  return 0;
-}
+CLASS_LOADER_REGISTER_CLASS(image_manip::IIRImage, rclcpp::Node)
