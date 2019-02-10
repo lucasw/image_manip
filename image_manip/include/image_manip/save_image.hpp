@@ -1,5 +1,5 @@
-/*
- * Copyright (c) 2017 Lucas Walter
+/**
+ * Copyright 2015-2019 Lucas Walter
  * June 2017
  * All rights reserved.
  *
@@ -26,59 +26,60 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
+ *
+ *  Save a received image to disk
+ *
+ * TODO(lucasw) want to also have a gate_image node which passes images
+ * through when triggered- but for now image_deque and this node will
+ * duplicate that functionality and only save or add to the deque
+ * when triggered.
+ *
  */
 
-#ifndef IMAGE_MANIP_IIR_IMAGE_HPP
-#define IMAGE_MANIP_IIR_IMAGE_HPP
-
-#include <cv_bridge/cv_bridge.h>
-#include <deque>
-#include <image_manip/utility.h>
 #include <internal_pub_sub/internal_pub_sub.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
-#include <sensor_msgs/image_encodings.hpp>
+#include <std_msgs/msg/bool.hpp>
+#include <string>
 
 
 namespace image_manip
 {
 
-class IIRImage : public rclcpp::Node
+class SaveImage : public rclcpp::Node
 {
-public:
-  IIRImage(std::shared_ptr<internal_pub_sub::Core> core = nullptr);
-  ~IIRImage();
-  void init();
-private:
+protected:
   std::shared_ptr<internal_pub_sub::Core> core_;
-
-  // rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
-  std::shared_ptr<internal_pub_sub::Publisher> image_pub_;
-  // rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_;
+  // TODO(lucasw) maybe mode to capture N images then stop?
+  // rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
   std::shared_ptr<internal_pub_sub::Subscriber> image_sub_;
+  // rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr saved_pub_;
+  std::shared_ptr<internal_pub_sub::Publisher> saved_pub_;
 
-  // std::vector<rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr> image_subs_;
-  std::vector<std::shared_ptr<internal_pub_sub::Subscriber> > image_subs_;
-
-  double frame_rate_ = 20;
-  std::vector<double> b_coeffs_;
-  // faster to leave this empty, which amounts to a_coeffs_ = {1.0};
-  std::vector<double> a_coeffs_;
-
-  bool use_time_sequence_ = false;
-
-  rclcpp::TimerBase::SharedPtr timer_;
-  void update();
-
-  std::deque<sensor_msgs::msg::Image::SharedPtr> in_images_;
-  std::deque<cv_bridge::CvImageConstPtr> in_cv_images_;
-  std::deque<cv::Mat> out_frames_;
-  bool dirty_ = false;
+  int counter_ = 0;
+  rclcpp::Time start_time_;
+  std::string prefix_ = "frame";
 
   void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
-  void imagesCallback(const sensor_msgs::msg::Image::SharedPtr msg, const size_t index);
+
+  // maybe these should be in base class
+  bool capture_single_ = false;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr single_sub_;
+  void singleCallback(const std_msgs::msg::Bool::SharedPtr msg);
+
+  bool capture_continuous_ = false;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr continuous_sub_;
+  void continuousCallback(const std_msgs::msg::Bool::SharedPtr msg);
+
+  bool dirty_ = false;
+  sensor_msgs::msg::Image::SharedPtr image_;
+  std::mutex mutex_;
+  void update();
+  rclcpp::TimerBase::SharedPtr timer_;
+public:
+  SaveImage(std::shared_ptr<internal_pub_sub::Core> core = nullptr);
+  ~SaveImage();
+  void init();
 };
 
-}  // image_manip
-
-#endif  // IMAGE_MANIP_IIR_IMAGE_HPP
+}

@@ -35,6 +35,7 @@ include_directories(
 
 add_library(imagemanip SHARED
   src/iir_image.cpp
+  src/save_image.cpp
   src/utility.cpp
 )
 ament_target_dependencies(imagemanip
@@ -113,15 +114,9 @@ target_link_libraries(iir_image imagemanip)
 ament_target_dependencies(iir_image rclcpp)
 install(TARGETS iir_image DESTINATION lib/${PROJECT_NAME})
 
-add_executable(save_image src/save_image.cpp src/utility.cpp)
-ament_target_dependencies(save_image
-  "cv_bridge"
-  "rclcpp"
-  "sensor_msgs"
-  "std_msgs")
-target_link_libraries(save_image
-  ${OpenCV_LIBRARIES}
-  ${cv_bridge_LIBRARIES})
+add_executable(save_image src/nodes/save_image.cpp)
+target_link_libraries(save_image imagemanip)
+ament_target_dependencies(save_image rclcpp)
 install(TARGETS save_image DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY data DESTINATION share/${PROJECT_NAME})

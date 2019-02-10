@@ -188,6 +188,7 @@ def generate_launch_description():
             blue = 128,
             width = small_width,
             height = small_height,
+            frame_rate_ = 1.0,
             )
     node = launch_ros.actions.Node(
             package='image_manip',

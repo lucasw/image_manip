@@ -200,8 +200,8 @@ void IIRImage::init()
 
       std::function<void(std::shared_ptr<sensor_msgs::msg::Image>)> fnc;
       fnc = std::bind(&IIRImage::imagesCallback, this, _1, i);
-      image_subs_.push_back(create_subscription<sensor_msgs::msg::Image>(
-          ss.str(), fnc));
+      image_subs_.push_back(core_->create_subscription(
+          ss.str(), fnc, shared_from_this()));
     }
   }
   else
@@ -209,13 +209,16 @@ void IIRImage::init()
     // sub_ = create_subscription<sensor_msgs::msg::Image>("image_in",
     //     std::bind(&IIRImage::imageCallback, this, _1));
     image_sub_ = core_->create_subscription("image_in",
-        std::bind(&IIRImage::imageCallback, this, _1));
+        std::bind(&IIRImage::imageCallback, this, _1),
+        shared_from_this());
   }
 
   get_parameter_or("frame_rate", frame_rate_, frame_rate_);
   const int period_ms = 1000.0 / frame_rate_;
   timer_ = create_wall_timer(std::chrono::milliseconds(period_ms),
       std::bind(&IIRImage::update, this));
+
+  RCLCPP_INFO(get_logger(), "iir image initialized");
 }
 
 }  // namespace image_manip
