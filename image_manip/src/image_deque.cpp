@@ -30,7 +30,7 @@
 
 #include <cv_bridge/cv_bridge.h>
 #include <deque>
-// #include <image_manip/image_deque.h>
+#include <image_manip/image_deque.hpp>
 #include <image_manip/utility.h>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
@@ -43,97 +43,51 @@ using std::placeholders::_1;
 
 namespace image_manip
 {
-class ImageDeque : public rclcpp::Node
+
+ImageDeque::ImageDeque(std::shared_ptr<internal_pub_sub::Core> core) :
+    Node("image_deque"), core_(core)
 {
-public:
-  ImageDeque();
-  ~ImageDeque();
-
-  void init();
-private:
-  // send a bool to indicate that an image was saved
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr captured_trigger_pub_;
-  // publish the most recent captured image
-  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr captured_pub_;
-  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr anim_pub_;
-  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
-
-  // this is for appending onto the animation output
-  sensor_msgs::msg::Image::SharedPtr live_frame_;
-  std::deque<sensor_msgs::msg::Image::SharedPtr> images_;
-
-  // TODO(lucasw) some of these ought to be parameters
-  float frame_rate_ = 5.0;
-  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr frame_rate_sub_;
-  void frameRateCallback(const std_msgs::msg::Float32::SharedPtr msg);
-
-  bool capture_single_ = false;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr capture_single_sub_;
-  void captureSingleCallback(const std_msgs::msg::Bool::SharedPtr msg)
-  {
-    if (msg->data)
-    {
-      RCLCPP_INFO(get_logger(), "capture");
-      capture_single_ = msg->data;
-      dirty_ = true;
-    }
-  }
-
-  unsigned int index_ = 0;
-  rclcpp::Subscription<std_msgs::msg::UInt16>::SharedPtr index_sub_;
-  void indexCallback(const std_msgs::msg::UInt16::SharedPtr msg);
-
-  // TODO(lucasw) index_fraction
-
-  unsigned int start_index_ = 0;
-  rclcpp::Subscription<std_msgs::msg::UInt16>::SharedPtr start_index_sub_;
-  void startIndexCallback(const std_msgs::msg::UInt16::SharedPtr msg)
-  {
-    if (start_index_ != msg->data) {
-      RCLCPP_INFO(get_logger(), "new start index %d", start_index_);
-    }
-    start_index_ = msg->data;
-    dirty_ = true;
-  }
-
-  bool use_live_frame_ = true;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr use_live_frame_sub_;
-  void useLiveFrameCallback(const std_msgs::msg::Bool::SharedPtr msg)
-  {
-    use_live_frame_ = msg->data;
-    dirty_ = true;
-  }
-
-  bool capture_continuous_ = false;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr capture_continuous_sub_;
-  void captureContinuousCallback(const std_msgs::msg::Bool::SharedPtr msg)
-  {
-    capture_continuous_ = msg->data;
-    dirty_ = true;
-  }
-
-  unsigned int max_size_ = 1000;
-  rclcpp::Subscription<std_msgs::msg::UInt16>::SharedPtr max_size_sub_;
-  void maxSizeCallback(const std_msgs::msg::UInt16::SharedPtr msg)
-  {
-    max_size_ = msg->data;
-    dirty_ = true;
-  }
-  //////
-
-  bool dirty_ = false;
-  void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
-  rclcpp::TimerBase::SharedPtr timer_;
-  void update();
-};  // ImageDeque
-
-ImageDeque::ImageDeque() : Node("image_deque")
-{
-  init();
 }
 
 ImageDeque::~ImageDeque()
 {
+}
+
+void ImageDeque::captureSingleCallback(const std_msgs::msg::Bool::SharedPtr msg)
+{
+  if (msg->data)
+  {
+    RCLCPP_INFO(get_logger(), "capture");
+    capture_single_ = msg->data;
+    dirty_ = true;
+  }
+}
+
+void ImageDeque::startIndexCallback(const std_msgs::msg::UInt16::SharedPtr msg)
+{
+  if (start_index_ != msg->data) {
+    RCLCPP_INFO(get_logger(), "new start index %d", start_index_);
+  }
+  start_index_ = msg->data;
+  dirty_ = true;
+}
+
+void ImageDeque::useLiveFrameCallback(const std_msgs::msg::Bool::SharedPtr msg)
+{
+  use_live_frame_ = msg->data;
+  dirty_ = true;
+}
+
+void ImageDeque::captureContinuousCallback(const std_msgs::msg::Bool::SharedPtr msg)
+{
+  capture_continuous_ = msg->data;
+  dirty_ = true;
+}
+
+void ImageDeque::maxSizeCallback(const std_msgs::msg::UInt16::SharedPtr msg)
+{
+  max_size_ = msg->data;
+  dirty_ = true;
 }
 
 void ImageDeque::frameRateCallback(const std_msgs::msg::Float32::SharedPtr msg)
@@ -251,11 +205,12 @@ void ImageDeque::update()
 void ImageDeque::init()
 {
   captured_trigger_pub_ = create_publisher<std_msgs::msg::Bool>("captured_image_trigger");
-  captured_pub_ = create_publisher<sensor_msgs::msg::Image>("captured_image");
-  anim_pub_ = create_publisher<sensor_msgs::msg::Image>("anim");
+  captured_pub_ = core_->get_create_publisher("captured_image", shared_from_this());
+  anim_pub_ = core_->get_create_publisher("anim", shared_from_this());
 
-  image_sub_ = create_subscription<sensor_msgs::msg::Image>("image",
-      std::bind(&ImageDeque::imageCallback, this, _1));
+  image_sub_ = core_->create_subscription("image",
+      std::bind(&ImageDeque::imageCallback, this, _1),
+      shared_from_this());
 
   frame_rate_sub_ = this->create_subscription<std_msgs::msg::Float32>("frame_rate",
       std::bind(&ImageDeque::frameRateCallback, this, _1));
@@ -279,15 +234,6 @@ void ImageDeque::init()
 
 }  // namespace image_manip
 
-int main(int argc, char * argv[])
-{
-  rclcpp::init(argc, argv);
+#include <class_loader/register_macro.hpp>
 
-  // Force flush of the stdout buffer.
-  // This ensures a correct sync of all prints
-  // even when executed simultaneously within a launch file.
-  setvbuf(stdout, NULL, _IONBF, BUFSIZ);
-  rclcpp::spin(std::make_shared<image_manip::ImageDeque>());
-  rclcpp::shutdown();
-  return 0;
-}
+CLASS_LOADER_REGISTER_CLASS(image_manip::ImageDeque, rclcpp::Node)

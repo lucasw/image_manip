@@ -35,6 +35,7 @@ include_directories(
 
 add_library(imagemanip SHARED
   src/iir_image.cpp
+  src/image_deque.cpp
   src/save_image.cpp
   src/utility.cpp
 )
@@ -98,21 +99,15 @@ target_link_libraries(color
   ${cv_bridge_LIBRARIES})
 install(TARGETS color DESTINATION lib/${PROJECT_NAME})
 
-add_executable(image_deque src/image_deque.cpp src/utility.cpp)
-ament_target_dependencies(image_deque
-  "cv_bridge"
-  "rclcpp"
-  "sensor_msgs"
-  "std_msgs")
-target_link_libraries(image_deque
-  ${OpenCV_LIBRARIES}
-  ${cv_bridge_LIBRARIES})
-install(TARGETS image_deque DESTINATION lib/${PROJECT_NAME})
-
 add_executable(iir_image src/nodes/iir_image.cpp)
 target_link_libraries(iir_image imagemanip)
 ament_target_dependencies(iir_image rclcpp)
 install(TARGETS iir_image DESTINATION lib/${PROJECT_NAME})
+
+add_executable(image_deque src/nodes/image_deque.cpp)
+target_link_libraries(image_deque imagemanip)
+ament_target_dependencies(image_deque rclcpp)
+install(TARGETS image_deque DESTINATION lib/${PROJECT_NAME})
 
 add_executable(save_image src/nodes/save_image.cpp)
 target_link_libraries(save_image imagemanip)
