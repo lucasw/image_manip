@@ -48,6 +48,9 @@ ament_target_dependencies(imagemanip
   "sensor_msgs"
   "std_msgs"
 )
+rclcpp_register_node_plugins(imagemanip "image_manip::IIRImage")
+rclcpp_register_node_plugins(imagemanip "image_manip::ImageDeque")
+rclcpp_register_node_plugins(imagemanip "image_manip::SaveImage")
 install(TARGETS
   imagemanip
   ARCHIVE DESTINATION lib
