@@ -34,6 +34,7 @@ include_directories(
 )
 
 add_library(imagemanip SHARED
+  src/color.cpp
   src/iir_image.cpp
   src/image_deque.cpp
   src/save_image.cpp
@@ -48,6 +49,7 @@ ament_target_dependencies(imagemanip
   "sensor_msgs"
   "std_msgs"
 )
+rclcpp_register_node_plugins(imagemanip "image_manip::Color")
 rclcpp_register_node_plugins(imagemanip "image_manip::IIRImage")
 rclcpp_register_node_plugins(imagemanip "image_manip::ImageDeque")
 rclcpp_register_node_plugins(imagemanip "image_manip::SaveImage")
@@ -91,15 +93,9 @@ target_link_libraries(roto_zoom
   ${cv_bridge_LIBRARIES})
 install(TARGETS roto_zoom DESTINATION lib/${PROJECT_NAME})
 
-add_executable(color src/color.cpp src/utility.cpp)
-ament_target_dependencies(color
-  "cv_bridge"
-  "rclcpp"
-  "sensor_msgs"
-  "std_msgs")
-target_link_libraries(color
-  ${OpenCV_LIBRARIES}
-  ${cv_bridge_LIBRARIES})
+add_executable(color src/nodes/color.cpp)
+target_link_libraries(color imagemanip)
+ament_target_dependencies(color rclcpp)
 install(TARGETS color DESTINATION lib/${PROJECT_NAME})
 
 add_executable(iir_image src/nodes/iir_image.cpp)

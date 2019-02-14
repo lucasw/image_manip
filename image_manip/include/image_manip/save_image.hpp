@@ -36,6 +36,9 @@
  *
  */
 
+#ifndef IMAGE_MANIP_SAVE_IMAGE_HPP
+#define IMAGE_MANIP_SAVE_IMAGE_HPP
+
 #include <internal_pub_sub/internal_pub_sub.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
@@ -83,3 +86,5 @@ public:
 };
 
 }
+
+#endif  // IMAGE_MANIP_SAVE_IMAGE_HPP

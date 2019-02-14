@@ -19,45 +19,29 @@
 */
 
 #include <cv_bridge/cv_bridge.h>
+#include <image_manip/color.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/image_encodings.hpp>
 using std::placeholders::_1;
 
-class Color : public rclcpp::Node
+namespace image_manip
 {
-protected:
-  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
 
-  rclcpp::TimerBase::SharedPtr timer_;
-  void pubImage();
+Color::Color(
+    std::shared_ptr<internal_pub_sub::Core> core,
+    const std::string& node_name,
+    const std::string& node_namespace) :
+    Node(node_name, node_namespace),
+    core_(core)
+{
+}
 
-  int width_ = 1024;
-  int height_ = 1024;
-  int red_ = 255;
-  int green_ = 255;
-  int blue_= 255;
+Color::~Color()
+{
+}
 
-  double frame_rate_ = 20.0;
-  void updateTimer();
-
-  bool dirty_ = true;
-  cv::Mat image_;
-
-#if 0
-  rcl_interfaces::msg::SetParametersResult paramChangeCallback(std::vector<rclcpp::Parameter> parameters);
-#endif
-#if 1
-  rclcpp::AsyncParametersClient::SharedPtr parameters_client_;
-  rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent>::SharedPtr param_sub_;
-  void onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPtr event);
-#endif
-
-public:
-  Color();
-};
-
-Color::Color() : Node("color")
+void Color::init()
 {
   set_parameter_if_not_set("red", red_);
   get_parameter_or("red", red_, red_);
@@ -74,7 +58,8 @@ Color::Color() : Node("color")
   set_parameter_if_not_set("frame_rate", frame_rate_);
   get_parameter_or("frame_rate", frame_rate_, frame_rate_);
 
-  pub_ = create_publisher<sensor_msgs::msg::Image>("image");
+  // image_pub_ = create_publisher<sensor_msgs::msg::Image>("image");
+  image_pub_ = core_->get_create_publisher("image", shared_from_this());
 
   std::cout << width_ << " x " << height_ << "\n";
 #if 0
@@ -122,7 +107,7 @@ void Color::pubImage()
   cv_image.encoding = "rgb8";
   // TODO(lucasw) cache the converted image message and only call toImageMsg() above
   // in if dirty.
-  pub_->publish(cv_image.toImageMsg());
+  image_pub_->publish(cv_image.toImageMsg());
 }
 
 #if 0
@@ -175,17 +160,8 @@ void Color::onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPt
 }  // parameter event handler
 #endif
 
-int main(int argc, char** argv)
-{
-  rclcpp::init(argc, argv);
+}  // image_manip
 
-  // Force flush of the stdout buffer.
-  // This ensures a correct sync of all prints
-  // even when executed simultaneously within a launch file.
-  setvbuf(stdout, NULL, _IONBF, BUFSIZ);
-  auto color = std::make_shared<Color>();
-  // color->init();
-  rclcpp::spin(color);
-  rclcpp::shutdown();
-  return 0;
-}
+#include <class_loader/register_macro.hpp>
+
+CLASS_LOADER_REGISTER_CLASS(image_manip::Color, rclcpp::Node)
