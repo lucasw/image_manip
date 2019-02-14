@@ -21,6 +21,8 @@ find_package(ament_cmake REQUIRED)
 find_package(class_loader REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(example_interfaces REQUIRED)
+# TODO(lucasw) if this isn't available then don't build the executables that need it
+find_package(imgui_ros REQUIRED)
 find_package(internal_pub_sub REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rcutils)
@@ -112,6 +114,14 @@ add_executable(save_image src/nodes/save_image.cpp)
 target_link_libraries(save_image imagemanip)
 ament_target_dependencies(save_image rclcpp)
 install(TARGETS save_image DESTINATION lib/${PROJECT_NAME})
+
+add_executable(color_imgui_composite src/nodes/color_imgui_composite.cpp)
+target_link_libraries(color_imgui_composite imagemanip)
+ament_target_dependencies(color_imgui_composite
+  imgui_ros
+  rclcpp
+)
+install(TARGETS color_imgui_composite DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY data DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
