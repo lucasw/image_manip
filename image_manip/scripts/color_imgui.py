@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
+import sys
+# import time
+
 from imgui_ros.msg import Widget
 from imgui_ros.srv import AddWindow
 from rcl_interfaces.msg import ParameterType
@@ -25,7 +29,15 @@ from rclpy.node import Node
 class ColorImGui(Node):
 
     def __init__(self):
-        super().__init__('stop_motion_imgui')
+        super().__init__('stop_motion_imgu')
+
+        parser = argparse.ArgumentParser(description='image_to_pointcloud')
+        parser.add_argument('-n', '--node_name', dest='node_name', type=str,
+                help='name of node to create controls for', default='gen_color')
+        parser.add_argument('-i', '--image_name', dest='image_name', type=str,
+                help='name of node to create controls for', default='image')
+        self.args, unknown = parser.parse_known_args(sys.argv)
+
         self.add_window_cli = self.create_client(AddWindow, 'add_window')
         while not self.add_window_cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
@@ -48,18 +60,16 @@ class ColorImGui(Node):
         req = AddWindow.Request()
         req.name = 'gen color controls'
 
-        # for image in ['image']:
         if True:
-            image = 'image'
             widget = Widget()
-            widget.name = image + " viewer"
-            widget.topic = "/" + image
+            widget.name = self.args.image_name + " viewer"
+            widget.topic = self.args.image_name
             widget.type = Widget.IMAGE
             req.widgets.append(widget)
 
         widget = Widget()
-        widget.name = 'frame rate'
-        widget.topic = 'gen_color'
+        widget.name = self.args.node_name + ' frame rate'
+        widget.topic = self.args.node_name
         widget.items.append('frame_rate')
         widget.type = Widget.PARAM
         widget.sub_type = Widget.FLOAT32
@@ -71,8 +81,8 @@ class ColorImGui(Node):
         # the imgui color picker would be ideal for this- how to make use of it?
         for channel in ['red', 'green', 'blue']:
             widget = Widget()
-            widget.name = channel
-            widget.topic = 'gen_color'
+            widget.name = self.args.node_name + channel
+            widget.topic = self.args.node_name
             widget.items.append(channel)
             widget.type = Widget.PARAM
             widget.sub_type = Widget.INT32
@@ -83,14 +93,14 @@ class ColorImGui(Node):
 
         for channel in ['width', 'height']:
             widget = Widget()
-            widget.name = channel
-            widget.topic = 'gen_color'
+            widget.name = self.args.node_name + channel
+            widget.topic = self.args.node_name
             widget.items.append(channel)
             widget.type = Widget.PARAM
             widget.sub_type = Widget.INT32
             widget.value = 128.0
             widget.min = 1.0
-            widget.max = 1024.0
+            widget.max = 2048.0
             req.widgets.append(widget)
 
         future = self.add_window_cli.call_async(req)
@@ -106,7 +116,6 @@ def main(args=None):
 
     demo.destroy_node()
     rclpy.shutdown()
-
 
 if __name__ == '__main__':
     main()

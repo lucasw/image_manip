@@ -58,8 +58,12 @@ void Color::init()
   set_parameter_if_not_set("frame_rate", frame_rate_);
   get_parameter_or("frame_rate", frame_rate_, frame_rate_);
 
+  // TODO(lucasw) remapping doesn't work with multiple same type nodes in same process
+  std::string topic = "image";
+  get_parameter_or("image", topic, topic);
+
   // image_pub_ = create_publisher<sensor_msgs::msg::Image>("image");
-  image_pub_ = core_->get_create_publisher("image", shared_from_this());
+  image_pub_ = core_->get_create_publisher(topic, shared_from_this());
 
   std::cout << width_ << " x " << height_ << "\n";
 #if 0
