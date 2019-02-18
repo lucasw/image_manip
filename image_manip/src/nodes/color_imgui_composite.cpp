@@ -59,8 +59,10 @@ int main(int argc, char * argv[])
   threads.push_back(std::thread(std::bind(run_node, imgui_ros)));
 
   for (size_t i = 0; i < 2; ++i) {
-    auto color = std::make_shared<image_manip::Color>(core, "color_" + std::to_string(i));
-    color->init();
+    auto color = std::make_shared<image_manip::Color>();
+    // TODO(lucasw) couldn't these three be combined?
+    color->init("color_" + std::to_string(i));
+    color->postInit(core);
     threads.push_back(std::thread(std::bind(run_node, color)));
   }
 

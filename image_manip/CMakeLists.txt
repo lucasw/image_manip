@@ -66,6 +66,7 @@ install(TARGETS
 # TODO(lucasw) make a cmake macro and a list of all the cpp files
 add_executable(image_publisher src/image_publisher.cpp)
 ament_target_dependencies(image_publisher
+  "cv_bridge"
   "rclcpp"
   "sensor_msgs")
 target_link_libraries(image_publisher

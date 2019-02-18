@@ -28,12 +28,7 @@ using std::placeholders::_1;
 namespace image_manip
 {
 
-Color::Color(
-    std::shared_ptr<internal_pub_sub::Core> core,
-    const std::string& node_name,
-    const std::string& node_namespace) :
-    Node(node_name, node_namespace),
-    core_(core)
+Color::Color()
 {
 }
 
@@ -41,8 +36,9 @@ Color::~Color()
 {
 }
 
-void Color::init()
+void Color::postInit(std::shared_ptr<internal_pub_sub::Core> core)
 {
+  Node::postInit(core);
   set_parameter_if_not_set("red", red_);
   get_parameter_or("red", red_, red_);
   set_parameter_if_not_set("green", green_);
@@ -93,6 +89,7 @@ void Color::updateTimer()
 
 void Color::pubImage()
 {
+  // RCLCPP_INFO(get_logger(), "timer update");
   if (dirty_ || image_.empty()) {
     get_parameter_or("red", red_, red_);
     get_parameter_or("green", green_, green_);
@@ -168,4 +165,4 @@ void Color::onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPt
 
 #include <class_loader/register_macro.hpp>
 
-CLASS_LOADER_REGISTER_CLASS(image_manip::Color, rclcpp::Node)
+CLASS_LOADER_REGISTER_CLASS(image_manip::Color, internal_pub_sub::Node)

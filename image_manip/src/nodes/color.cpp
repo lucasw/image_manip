@@ -36,8 +36,9 @@ int main(int argc, char * argv[])
   rclcpp::init(argc, argv);
   const bool ros_enable = true;
   auto core = std::make_shared<internal_pub_sub::Core>(ros_enable);
-  auto color = std::make_shared<image_manip::Color>(core);
-  color->init();
+  auto color = std::make_shared<image_manip::Color>();
+  color->init("color");
+  color->postInit(core);
   rclcpp::spin(color);
   rclcpp::shutdown();
   return 0;

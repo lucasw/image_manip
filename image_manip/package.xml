@@ -13,9 +13,11 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <build_depend>class_loader</build_depend>
+  <build_depend>cv_bridge</build_depend>
   <build_depend>imgui_ros</build_depend>
   <build_depend>internal_pub_sub</build_depend>
   <exec_depend>class_loader</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
   <exec_depend>imgui_ros</exec_depend>
   <exec_depend>internal_pub_sub</exec_depend>
 

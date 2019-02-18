@@ -30,10 +30,9 @@
 namespace image_manip
 {
 
-class Color : public rclcpp::Node
+class Color : public internal_pub_sub::Node
 {
 protected:
-  std::shared_ptr<internal_pub_sub::Core> core_;
   // rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
   std::shared_ptr<internal_pub_sub::Publisher> image_pub_;
 
@@ -62,11 +61,9 @@ protected:
 #endif
 
 public:
-  Color(std::shared_ptr<internal_pub_sub::Core> core = nullptr,
-      const std::string& node_name = "color",
-      const std::string& node_namespace = "");
+  Color();
   ~Color();
-  void init();
+  virtual void postInit(std::shared_ptr<internal_pub_sub::Core> core);
 };
 
 }  // image_manip
