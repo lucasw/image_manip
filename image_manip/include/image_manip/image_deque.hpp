@@ -45,16 +45,13 @@ using std::placeholders::_1;
 
 namespace image_manip
 {
-class ImageDeque : public rclcpp::Node
+class ImageDeque : public internal_pub_sub::Node
 {
 public:
-  ImageDeque(std::shared_ptr<internal_pub_sub::Core> core = nullptr);
+  ImageDeque();
   ~ImageDeque();
-
-  void init();
+  virtual void postInit(std::shared_ptr<internal_pub_sub::Core> core);
 private:
-  std::shared_ptr<internal_pub_sub::Core> core_;
-
   // send a bool to indicate that an image was saved
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr captured_trigger_pub_;
   // publish the most recent captured image

@@ -36,8 +36,9 @@ int main(int argc, char * argv[])
   rclcpp::init(argc, argv);
   const bool ros_enable = true;
   auto core = std::make_shared<internal_pub_sub::Core>(ros_enable);
-  auto save_image = std::make_shared<image_manip::SaveImage>(core);
-  save_image->init();
+  auto save_image = std::make_shared<image_manip::SaveImage>();
+  save_image->init("save_image");
+  save_image->postInit(core);
   rclcpp::spin(save_image);
   rclcpp::shutdown();
   return 0;

@@ -42,9 +42,9 @@ using std::placeholders::_1;
 namespace image_manip
 {
 
-IIRImage::IIRImage(std::shared_ptr<internal_pub_sub::Core> core) :
-    Node("iir_image"), core_(core)
+IIRImage::IIRImage()
 {
+
 }
 
 IIRImage::~IIRImage()
@@ -161,10 +161,12 @@ void IIRImage::imagesCallback(const sensor_msgs::msg::Image::SharedPtr msg, cons
   dirty_ = true;
 }
 
-void IIRImage::init()
+void IIRImage::postInit(std::shared_ptr<internal_pub_sub::Core> core)
 {
+  internal_pub_sub::Node::postInit(core);
+
   // pub_ = create_publisher<sensor_msgs::msg::Image>("image_out");
-  image_pub_ = core_->get_create_publisher("image_out", shared_from_this());
+  image_pub_ = get_create_internal_publisher("image_out");
 
   get_parameter_or("use_time_sequence", use_time_sequence_, use_time_sequence_);
 
@@ -200,17 +202,15 @@ void IIRImage::init()
 
       std::function<void(std::shared_ptr<sensor_msgs::msg::Image>)> fnc;
       fnc = std::bind(&IIRImage::imagesCallback, this, _1, i);
-      image_subs_.push_back(core_->create_subscription(
-          ss.str(), fnc, shared_from_this()));
+      image_subs_.push_back(create_internal_subscription(ss.str(), fnc));
     }
   }
   else
   {
     // sub_ = create_subscription<sensor_msgs::msg::Image>("image_in",
     //     std::bind(&IIRImage::imageCallback, this, _1));
-    image_sub_ = core_->create_subscription("image_in",
-        std::bind(&IIRImage::imageCallback, this, _1),
-        shared_from_this());
+    image_sub_ = create_internal_subscription("image_in",
+        std::bind(&IIRImage::imageCallback, this, _1));
   }
 
   get_parameter_or("frame_rate", frame_rate_, frame_rate_);
@@ -225,4 +225,4 @@ void IIRImage::init()
 
 #include <class_loader/register_macro.hpp>
 
-CLASS_LOADER_REGISTER_CLASS(image_manip::IIRImage, rclcpp::Node)
+CLASS_LOADER_REGISTER_CLASS(image_manip::IIRImage, internal_pub_sub::Node)

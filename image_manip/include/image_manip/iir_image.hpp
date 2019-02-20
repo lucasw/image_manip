@@ -43,15 +43,14 @@
 namespace image_manip
 {
 
-class IIRImage : public rclcpp::Node
+class IIRImage : public internal_pub_sub::Node
 {
 public:
-  IIRImage(std::shared_ptr<internal_pub_sub::Core> core = nullptr);
+  IIRImage();
+  // std::shared_ptr<internal_pub_sub::Core> core = nullptr);
   ~IIRImage();
-  void init();
+  virtual void postInit(std::shared_ptr<internal_pub_sub::Core> core);
 private:
-  std::shared_ptr<internal_pub_sub::Core> core_;
-
   // rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
   std::shared_ptr<internal_pub_sub::Publisher> image_pub_;
   // rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_;

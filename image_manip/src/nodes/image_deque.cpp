@@ -36,8 +36,9 @@ int main(int argc, char * argv[])
   rclcpp::init(argc, argv);
   const bool ros_enable = true;
   auto core = std::make_shared<internal_pub_sub::Core>(ros_enable);
-  auto image_deque = std::make_shared<image_manip::ImageDeque>(core);
-  image_deque->init();
+  auto image_deque = std::make_shared<image_manip::ImageDeque>();
+  image_deque->init("image_deque");
+  image_deque->postInit(core);
   rclcpp::spin(image_deque);
   rclcpp::shutdown();
   return 0;

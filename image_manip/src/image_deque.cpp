@@ -44,8 +44,7 @@ using std::placeholders::_1;
 namespace image_manip
 {
 
-ImageDeque::ImageDeque(std::shared_ptr<internal_pub_sub::Core> core) :
-    Node("image_deque"), core_(core)
+ImageDeque::ImageDeque()
 {
 }
 
@@ -202,15 +201,16 @@ void ImageDeque::update()
   dirty_ = false;
 }
 
-void ImageDeque::init()
+void ImageDeque::postInit(std::shared_ptr<internal_pub_sub::Core> core)
 {
-  captured_trigger_pub_ = create_publisher<std_msgs::msg::Bool>("captured_image_trigger");
-  captured_pub_ = core_->get_create_publisher("captured_image", shared_from_this());
-  anim_pub_ = core_->get_create_publisher("anim", shared_from_this());
+  internal_pub_sub::Node::postInit(core);
 
-  image_sub_ = core_->create_subscription("image",
-      std::bind(&ImageDeque::imageCallback, this, _1),
-      shared_from_this());
+  captured_trigger_pub_ = create_publisher<std_msgs::msg::Bool>("captured_image_trigger");
+  captured_pub_ = get_create_internal_publisher("captured_image");
+  anim_pub_ = get_create_internal_publisher("anim");
+
+  image_sub_ = create_internal_subscription("image",
+      std::bind(&ImageDeque::imageCallback, this, _1));
 
   frame_rate_sub_ = this->create_subscription<std_msgs::msg::Float32>("frame_rate",
       std::bind(&ImageDeque::frameRateCallback, this, _1));
@@ -236,4 +236,4 @@ void ImageDeque::init()
 
 #include <class_loader/register_macro.hpp>
 
-CLASS_LOADER_REGISTER_CLASS(image_manip::ImageDeque, rclcpp::Node)
+CLASS_LOADER_REGISTER_CLASS(image_manip::ImageDeque, internal_pub_sub::Node)

@@ -49,10 +49,13 @@
 namespace image_manip
 {
 
-class SaveImage : public rclcpp::Node
+class SaveImage : public internal_pub_sub::Node
 {
+public:
+  SaveImage();
+  ~SaveImage();
+  virtual void postInit(std::shared_ptr<internal_pub_sub::Core> core);
 protected:
-  std::shared_ptr<internal_pub_sub::Core> core_;
   // TODO(lucasw) maybe mode to capture N images then stop?
   // rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
   std::shared_ptr<internal_pub_sub::Subscriber> image_sub_;
@@ -79,10 +82,6 @@ protected:
   std::mutex mutex_;
   void update();
   rclcpp::TimerBase::SharedPtr timer_;
-public:
-  SaveImage(std::shared_ptr<internal_pub_sub::Core> core = nullptr);
-  ~SaveImage();
-  void init();
 };
 
 }

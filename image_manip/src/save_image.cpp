@@ -36,9 +36,14 @@ using std::placeholders::_1;
 namespace image_manip
 {
 
-SaveImage::SaveImage(std::shared_ptr<internal_pub_sub::Core> core) :
-    Node("save_image"), core_(core)
+SaveImage::SaveImage()
 {
+}
+
+void SaveImage::postInit(std::shared_ptr<internal_pub_sub::Core> core)
+{
+  internal_pub_sub::Node::postInit(core);
+
   get_parameter_or("prefix", prefix_, prefix_);
   get_parameter_or("capture_continuous", capture_continuous_, capture_continuous_);
 
@@ -51,12 +56,10 @@ SaveImage::SaveImage(std::shared_ptr<internal_pub_sub::Core> core) :
 
   timer_ = create_wall_timer(std::chrono::milliseconds(20),
       std::bind(&SaveImage::update, this));
-}
 
-void SaveImage::init()
-{
+
   // saved_pub_ = create_publisher<sensor_msgs::msg::Image>("saved_image", true);
-  saved_pub_ = core_->get_create_publisher("saved_image", shared_from_this());
+  saved_pub_ = get_create_internal_publisher("saved_image");
 
   single_sub_ = create_subscription<std_msgs::msg::Bool>("single",
       std::bind(&SaveImage::singleCallback, this, _1));
@@ -64,8 +67,8 @@ void SaveImage::init()
       std::bind(&SaveImage::continuousCallback, this, _1));
 
   // image_sub_ = create_subscription<sensor_msgs::msg::Image>("image",
-  image_sub_ = core_->create_subscription("image",
-      std::bind(&SaveImage::imageCallback, this, _1), shared_from_this());
+  image_sub_ = create_internal_subscription("image",
+      std::bind(&SaveImage::imageCallback, this, _1));
 
   RCLCPP_INFO(get_logger(), "save image initialized");
 }
@@ -135,4 +138,4 @@ void SaveImage::update()
 
 #include <class_loader/register_macro.hpp>
 
-CLASS_LOADER_REGISTER_CLASS(image_manip::SaveImage, rclcpp::Node)
+CLASS_LOADER_REGISTER_CLASS(image_manip::SaveImage, internal_pub_sub::Node)

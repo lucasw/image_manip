@@ -36,8 +36,9 @@ int main(int argc, char * argv[])
   rclcpp::init(argc, argv);
   const bool ros_enable = true;
   auto core = std::make_shared<internal_pub_sub::Core>(ros_enable);
-  auto iir_image = std::make_shared<image_manip::IIRImage>(core);
-  iir_image->init();
+  auto iir_image = std::make_shared<image_manip::IIRImage>();
+  iir_image->init("iir_image");
+  iir_image->postInit(core);
   rclcpp::spin(iir_image);
   rclcpp::shutdown();
   return 0;
