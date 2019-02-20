@@ -55,7 +55,9 @@ int main(int argc, char * argv[])
   // std::map<std::string, std::thread>
 
   // imgui_ros has to be single threaded for now to avoid context switches with opengl
-  auto imgui_ros = std::make_shared<imgui_ros::ImguiRos>(core);
+  auto imgui_ros = std::make_shared<imgui_ros::ImguiRos>();
+  imgui_ros->init("imgui_ros");
+  imgui_ros->postInit(core);
   threads.push_back(std::thread(std::bind(run_node, imgui_ros)));
 
   for (size_t i = 0; i < 2; ++i) {
