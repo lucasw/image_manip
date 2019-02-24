@@ -30,14 +30,17 @@ namespace image_manip
 
 Color::Color()
 {
+  // will crash if try to use any null pointers here, because init() hasn't run.
 }
 
 Color::~Color()
 {
+  RCLCPP_INFO(get_logger(), "deconstructor");
 }
 
 void Color::postInit(std::shared_ptr<internal_pub_sub::Core> core)
 {
+  RCLCPP_INFO(get_logger(), "post init");
   Node::postInit(core);
   try {
     set_parameter_if_not_set("red", red_);
