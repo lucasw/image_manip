@@ -67,7 +67,7 @@ void Color::postInit(std::shared_ptr<internal_pub_sub::Core> core)
   // image_pub_ = create_publisher<sensor_msgs::msg::Image>("image");
   image_pub_ = get_create_internal_publisher("image");
 
-  std::cout << width_ << " x " << height_ << "\n";
+  // std::cout << width_ << " x " << height_ << "\n";
 #if 0
   this->register_param_change_callback(std::bind(&Color::paramChangeCallback, this, _1));
 #endif
@@ -84,11 +84,12 @@ void Color::updateTimer()
 {
   if (frame_rate_ > 0.0) {
     int period_ms = 1000.0 / frame_rate_;
-    std::cout << "frame rate " << frame_rate_ << ", period ms " << period_ms << "\n";
+    RCLCPP_DEBUG(get_logger(), "frame rate %f, period ms %d",
+        frame_rate_, period_ms);
     timer_ = create_wall_timer(std::chrono::milliseconds(period_ms),
         std::bind(&Color::pubImage, this));
   } else {
-    std::cout << "setting frame rate to 0.0\n";
+    RCLCPP_INFO(get_logger(), "setting frame rate to 0.0");
     timer_ = nullptr;
   }
 }

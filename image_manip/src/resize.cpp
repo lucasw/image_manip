@@ -30,6 +30,7 @@
 
 #include <cv_bridge/cv_bridge.h>
 #include <image_manip/utility.h>
+#include <internal_pub_sub/internal_pub_sub.hpp>
 #include <opencv2/imgproc.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
@@ -42,14 +43,21 @@ using std::placeholders::_1;
 namespace image_manip
 {
 
-class Resize : public rclcpp::Node
+class Resize : public internal_pub_sub::Node
 {
 public:
-Resize() : Node("resize")
+Resize()
 {
-  dirty_ = false;
-  pub_ = this->create_publisher<sensor_msgs::msg::Image>("image_out");
+}
 
+void postInit(std::shared_ptr<internal_pub_sub::Core> core)
+{
+  internal_pub_sub::Node::postInit(core);
+
+  dirty_ = false;
+  image_pub_ = get_create_internal_publisher("image_out");
+
+  // TODO(lucasw) try catch
   get_parameter_or("frame_rate", frame_rate_, frame_rate_);
   get_parameter_or("width", width_, width_);
   set_parameter_if_not_set("width", width_);
@@ -60,10 +68,11 @@ Resize() : Node("resize")
 
   register_param_change_callback(std::bind(&Resize::paramChangeCallback, this, _1));
 
-  image_sub_ = this->create_subscription<sensor_msgs::msg::Image>("image_in",
+  image_sub_ = create_internal_subscription("image_in",
       std::bind(&image_manip::Resize::imageCallback, this, _1));
 
   // TODO(lucasw) are these needed vs. just parameters?
+  // Change them to parameters and register a param callback
   width_sub_ = this->create_subscription<std_msgs::msg::UInt16>("width",
       std::bind(&image_manip::Resize::widthCallback, this, _1));
   height_sub_ = this->create_subscription<std_msgs::msg::UInt16>("height",
@@ -74,7 +83,7 @@ Resize() : Node("resize")
     timer_ = this->create_wall_timer(
         std::chrono::milliseconds(static_cast<long int>(1000.0 / frame_rate_)),
         std::bind(&Resize::update, this));
-    RCLCPP_INFO(get_logger(), "starting timer");
+    RCLCPP_DEBUG(get_logger(), "starting timer");
   }
 }
 
@@ -190,7 +199,7 @@ void update()
   cv_image.header = cv_ptr->header;  // or reception time of original message?
   cv_image.encoding = encoding;
   // TODO(lucasw) expensive image copy
-  pub_->publish(cv_image.toImageMsg());
+  image_pub_->publish(cv_image.toImageMsg());
 
   dirty_ = false;
 }
@@ -204,25 +213,16 @@ private:
   int mode_ = 0;
   int interpolate_mode_ = cv::INTER_NEAREST;
   sensor_msgs::msg::Image::SharedPtr msg_;
-  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
-  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
+  // rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
+  std::shared_ptr<internal_pub_sub::Publisher> image_pub_;
+  // rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
+  std::shared_ptr<internal_pub_sub::Subscriber> image_sub_;
   rclcpp::Subscription<std_msgs::msg::UInt16>::SharedPtr width_sub_;
   rclcpp::Subscription<std_msgs::msg::UInt16>::SharedPtr height_sub_;
   rclcpp::TimerBase::SharedPtr timer_;
 };  // Resize
 }  // namespace image_manip
 
+#include <class_loader/register_macro.hpp>
 
-int main(int argc, char * argv[])
-{
-  rclcpp::init(argc, argv);
-
-  // Force flush of the stdout buffer.
-  // This ensures a correct sync of all prints
-  // even when executed simultaneously within a launch file.
-  setvbuf(stdout, NULL, _IONBF, BUFSIZ);
-  rclcpp::spin(std::make_shared<image_manip::Resize>());
-  rclcpp::shutdown();
-  return 0;
-}
-
+CLASS_LOADER_REGISTER_CLASS(image_manip::Resize, internal_pub_sub::Node)

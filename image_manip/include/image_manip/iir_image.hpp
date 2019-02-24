@@ -47,7 +47,6 @@ class IIRImage : public internal_pub_sub::Node
 {
 public:
   IIRImage();
-  // std::shared_ptr<internal_pub_sub::Core> core = nullptr);
   ~IIRImage();
   virtual void postInit(std::shared_ptr<internal_pub_sub::Core> core);
 private:

@@ -39,6 +39,7 @@ add_library(imagemanip SHARED
   src/color.cpp
   src/iir_image.cpp
   src/image_deque.cpp
+  src/resize.cpp
   src/save_image.cpp
   src/utility.cpp
 )
@@ -54,6 +55,7 @@ ament_target_dependencies(imagemanip
 rclcpp_register_node_plugins(imagemanip "image_manip::Color")
 rclcpp_register_node_plugins(imagemanip "image_manip::IIRImage")
 rclcpp_register_node_plugins(imagemanip "image_manip::ImageDeque")
+rclcpp_register_node_plugins(imagemanip "image_manip::Resize")
 rclcpp_register_node_plugins(imagemanip "image_manip::SaveImage")
 install(TARGETS
   imagemanip
@@ -74,17 +76,6 @@ target_link_libraries(image_publisher
   ${cv_bridge_LIBRARIES})
 install(TARGETS image_publisher DESTINATION lib/${PROJECT_NAME})
 
-add_executable(resize src/resize.cpp src/utility.cpp)
-ament_target_dependencies(resize
-  "cv_bridge"
-  "rclcpp"
-  "sensor_msgs"
-  "std_msgs")
-target_link_libraries(resize
-  ${OpenCV_LIBRARIES}
-  ${cv_bridge_LIBRARIES})
-install(TARGETS resize DESTINATION lib/${PROJECT_NAME})
-
 add_executable(roto_zoom src/roto_zoom.cpp src/utility.cpp)
 ament_target_dependencies(roto_zoom
   "cv_bridge"
@@ -95,6 +86,8 @@ target_link_libraries(roto_zoom
   ${OpenCV_LIBRARIES}
   ${cv_bridge_LIBRARIES})
 install(TARGETS roto_zoom DESTINATION lib/${PROJECT_NAME})
+
+# TODO(lucasw) src/nodes/resize.cpp
 
 add_executable(color src/nodes/color.cpp)
 target_link_libraries(color imagemanip)
