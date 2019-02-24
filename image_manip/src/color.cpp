@@ -39,21 +39,24 @@ Color::~Color()
 void Color::postInit(std::shared_ptr<internal_pub_sub::Core> core)
 {
   Node::postInit(core);
-  set_parameter_if_not_set("red", red_);
-  get_parameter_or("red", red_, red_);
-  set_parameter_if_not_set("green", green_);
-  get_parameter_or("green", green_, green_);
-  set_parameter_if_not_set("blue", blue_);
-  get_parameter_or("blue", blue_, blue_);
-  // this works okay but would rather get width and height from
-  // an input image
-  set_parameter_if_not_set("width", width_);
-  get_parameter_or("width", width_, width_);
-  set_parameter_if_not_set("height", height_);
-  get_parameter_or("height", height_, height_);
-  set_parameter_if_not_set("frame_rate", frame_rate_);
-  get_parameter_or("frame_rate", frame_rate_, frame_rate_);
-
+  try {
+    set_parameter_if_not_set("red", red_);
+    get_parameter_or("red", red_, red_);
+    set_parameter_if_not_set("green", green_);
+    get_parameter_or("green", green_, green_);
+    set_parameter_if_not_set("blue", blue_);
+    get_parameter_or("blue", blue_, blue_);
+    // this works okay but would rather get width and height from
+    // an input image
+    set_parameter_if_not_set("width", width_);
+    get_parameter_or("width", width_, width_);
+    set_parameter_if_not_set("height", height_);
+    get_parameter_or("height", height_, height_);
+    set_parameter_if_not_set("frame_rate", frame_rate_);
+    get_parameter_or("frame_rate", frame_rate_, frame_rate_);
+  } catch (rclcpp::ParameterTypeException& ex) {
+    RCLCPP_ERROR(get_logger(), ex.what());
+  }
   // TODO(lucasw) remapping doesn't work with multiple same type nodes in same process
   // std::string topic = "image";
   // get_parameter_or("image", topic, topic);
