@@ -59,7 +59,7 @@ void SaveImage::postInit(std::shared_ptr<internal_pub_sub::Core> core)
 
 
   // saved_pub_ = create_publisher<sensor_msgs::msg::Image>("saved_image", true);
-  saved_pub_ = get_create_internal_publisher("saved_image");
+  saved_pub_ = create_internal_publisher("saved_image");
 
   single_sub_ = create_subscription<std_msgs::msg::Bool>("single",
       std::bind(&SaveImage::singleCallback, this, _1));

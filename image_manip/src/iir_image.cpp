@@ -166,7 +166,7 @@ void IIRImage::postInit(std::shared_ptr<internal_pub_sub::Core> core)
   internal_pub_sub::Node::postInit(core);
 
   // pub_ = create_publisher<sensor_msgs::msg::Image>("image_out");
-  image_pub_ = get_create_internal_publisher("image_out");
+  image_pub_ = create_internal_publisher("image_out");
 
   get_parameter_or("use_time_sequence", use_time_sequence_, use_time_sequence_);
 

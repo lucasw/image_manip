@@ -65,7 +65,7 @@ void Color::postInit(std::shared_ptr<internal_pub_sub::Core> core)
   // get_parameter_or("image", topic, topic);
 
   // image_pub_ = create_publisher<sensor_msgs::msg::Image>("image");
-  image_pub_ = get_create_internal_publisher("image");
+  image_pub_ = create_internal_publisher("image");
 
   // std::cout << width_ << " x " << height_ << "\n";
 #if 0

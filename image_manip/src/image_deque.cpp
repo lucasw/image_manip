@@ -206,8 +206,8 @@ void ImageDeque::postInit(std::shared_ptr<internal_pub_sub::Core> core)
   internal_pub_sub::Node::postInit(core);
 
   captured_trigger_pub_ = create_publisher<std_msgs::msg::Bool>("captured_image_trigger");
-  captured_pub_ = get_create_internal_publisher("captured_image");
-  anim_pub_ = get_create_internal_publisher("anim");
+  captured_pub_ = create_internal_publisher("captured_image");
+  anim_pub_ = create_internal_publisher("anim");
 
   image_sub_ = create_internal_subscription("image",
       std::bind(&ImageDeque::imageCallback, this, _1));

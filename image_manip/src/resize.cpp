@@ -52,10 +52,11 @@ Resize()
 
 void postInit(std::shared_ptr<internal_pub_sub::Core> core)
 {
+  RCLCPP_INFO(get_logger(), "resize post init");
   internal_pub_sub::Node::postInit(core);
 
   dirty_ = false;
-  image_pub_ = get_create_internal_publisher("image_out");
+  image_pub_ = create_internal_publisher("image_out");
 
   // TODO(lucasw) try catch
   get_parameter_or("frame_rate", frame_rate_, frame_rate_);
