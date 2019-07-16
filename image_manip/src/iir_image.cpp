@@ -56,44 +56,47 @@ void IIRImage::callback(
   updateTimer(timer_, config.frame_rate, config_.frame_rate);
   config_ = config;
 
-  if (use_time_sequence_)
+  if (level & 2)
   {
-    b_coeffs_.resize(8);
-    a_coeffs_.resize(8);
-  }
-  if (b_coeffs_.size() > 0)
-    b_coeffs_[0] = config_.b0;
-  if (b_coeffs_.size() > 1)
-    b_coeffs_[1] = config_.b1;
-  if (b_coeffs_.size() > 2)
-    b_coeffs_[2] = config_.b2;
-  if (b_coeffs_.size() > 3)
-    b_coeffs_[3] = config_.b3;
-  if (b_coeffs_.size() > 4)
-    b_coeffs_[4] = config_.b4;
-  if (b_coeffs_.size() > 5)
-    b_coeffs_[5] = config_.b5;
-  if (b_coeffs_.size() > 6)
-    b_coeffs_[6] = config_.b6;
-  if (b_coeffs_.size() > 7)
-    b_coeffs_[7] = config_.b7;
+    if (use_time_sequence_)
+    {
+      b_coeffs_.resize(8);
+      a_coeffs_.resize(8);
+    }
+    if (b_coeffs_.size() > 0)
+      b_coeffs_[0] = config_.b0;
+    if (b_coeffs_.size() > 1)
+      b_coeffs_[1] = config_.b1;
+    if (b_coeffs_.size() > 2)
+      b_coeffs_[2] = config_.b2;
+    if (b_coeffs_.size() > 3)
+      b_coeffs_[3] = config_.b3;
+    if (b_coeffs_.size() > 4)
+      b_coeffs_[4] = config_.b4;
+    if (b_coeffs_.size() > 5)
+      b_coeffs_[5] = config_.b5;
+    if (b_coeffs_.size() > 6)
+      b_coeffs_[6] = config_.b6;
+    if (b_coeffs_.size() > 7)
+      b_coeffs_[7] = config_.b7;
 
-  if (a_coeffs_.size() > 0)
-    a_coeffs_[0] = config_.a0;
-  if (a_coeffs_.size() > 1)
-    a_coeffs_[1] = config_.a1;
-  if (a_coeffs_.size() > 2)
-    a_coeffs_[2] = config_.a2;
-  if (a_coeffs_.size() > 3)
-    a_coeffs_[3] = config_.a3;
-  if (a_coeffs_.size() > 4)
-    a_coeffs_[4] = config_.a4;
-  if (a_coeffs_.size() > 5)
-    a_coeffs_[5] = config_.a5;
-  if (a_coeffs_.size() > 6)
-    a_coeffs_[6] = config_.a6;
-  if (a_coeffs_.size() > 7)
-    a_coeffs_[7] = config_.a7;
+    if (a_coeffs_.size() > 0)
+      a_coeffs_[0] = config_.a0;
+    if (a_coeffs_.size() > 1)
+      a_coeffs_[1] = config_.a1;
+    if (a_coeffs_.size() > 2)
+      a_coeffs_[2] = config_.a2;
+    if (a_coeffs_.size() > 3)
+      a_coeffs_[3] = config_.a3;
+    if (a_coeffs_.size() > 4)
+      a_coeffs_[4] = config_.a4;
+    if (a_coeffs_.size() > 5)
+      a_coeffs_[5] = config_.a5;
+    if (a_coeffs_.size() > 6)
+      a_coeffs_[6] = config_.a6;
+    if (a_coeffs_.size() > 7)
+      a_coeffs_[7] = config_.a7;
+  }
 
   dirty_ = true;
 }
@@ -105,7 +108,26 @@ void IIRImage::update(const ros::TimerEvent& e)
 
   cv::Mat out_frame;
 
-  for (size_t i = 0; i < in_images_.size() && i < b_coeffs_.size(); ++i)
+  size_t max_ind = 0;
+  if ((in_images_.size() > 0) && (b_coeffs_.size() > 0))
+  {
+    max_ind = in_images_.size() < b_coeffs_.size() ? in_images_.size() - 1 : b_coeffs_.size() - 1;
+  }
+  std::vector<size_t> inds;
+  if (!config_.reverse)
+  {
+    for (size_t i = 0; i <= max_ind; ++i) {
+      inds.push_back(i);
+    }
+  }
+  else
+  {
+    for (size_t i = max_ind; i >= 0 && i <= max_ind; --i) {
+      inds.push_back(i);
+    }
+  }
+
+  for (const auto& i : inds)
   {
     if (!in_images_[i])
       continue;
@@ -144,7 +166,7 @@ void IIRImage::update(const ros::TimerEvent& e)
       else if (bn < 0)
         out_frame -= in_cv_images_[i]->image * -bn;
     }
-  }
+  }  // loop through b coefficient inds
   if (out_frame.empty())
     return;
   // since the current frame hasn't been pushed yet,
