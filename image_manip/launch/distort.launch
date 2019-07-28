@@ -1,0 +1,127 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="use_debug" default="false" />
+  <arg name="use_dr_camera_info" default="true" />
+  <arg name="use_rqt" default="true" />
+  <arg name="image" default="$(find vimjay)/data/chess_640.png" />
+  <arg name="distort_then_rectify" default="true" />
+
+  <node name="image" pkg="vimjay" type="image.py"
+      args="$(arg image)"
+      output="screen" >
+    <remap from="camera_info" to="camera_info_unused" />
+    <param name="rate" value="10" />
+  </node>
+
+  <node name="dr_camera_info" pkg="vimjay" type="dr_camera_info.py"
+      output="screen"
+      if="$(arg use_dr_camera_info)" >
+  </node>
+
+  <!-- this is for rectifying then distorting -->
+  <group unless="$(arg distort_then_rectify)">
+  <node name="image_proc" pkg="image_proc" type="image_proc"
+      output="screen" >
+    <remap from="image_raw" to="image" />
+    <remap from="camera_info" to="camera_info_unused" />
+  </node>
+
+  <group ns="redistort" if="true" >
+  <node name="distort" pkg="image_manip" type="distort_image"
+      output="screen" >
+    <remap from="image" to="/image_rect" />
+    <remap from="camera_info" to="/camera_info_unused" />
+  </node>
+  </group>
+  </group>  <!-- false -->
+
+  <!-- this is for distorting then rectifying -->
+  <group ns="distort" if="$(arg distort_then_rectify)">
+  <node name="distort" pkg="image_manip" type="distort_image"
+      output="screen" >
+    <remap from="image" to="/image" />
+    <remap from="camera_info" to="/camera_info" />
+    <param name="use_debug" value="$(arg use_debug)" />
+  </node>
+  <node name="image_proc" pkg="image_proc" type="image_proc"
+      output="screen" >
+    <remap from="image_raw" to="distorted/image" />
+    <remap from="camera_info" to="distorted/camera_info" />
+  </node>
+
+  <!-- visualize the difference between the input and rectified output -
+      should be the same except for interpolation errors and where data is missing -->
+  <node name="gray" pkg="vimjay" type="color"
+      output="screen" >
+    <!-- would be nice to derive these from CameraInfo input -->
+    <param name="width" value="640" />
+    <param name="height" value="480" />
+    <remap from="image" to="gray" />
+  </node>
+  <node name="diff_image" pkg="vimjay" type="iir_imagev" 
+      output="screen" >
+    <rosparam param="b_coeffs">[1.0, 0.5, -0.5]</rosparam>
+    <remap from="image_0" to="gray" />
+    <remap from="image_1" to="/image" />
+    <remap from="image_2" to="/distort/image_rect" />
+    <remap from="filtered_image" to="diff_image" />
+  </node>
+
+  <!-- http://answers.ros.org/question/255970/how-to-deactivate-image_transport-plugins/ -->
+  <group ns="gray" >
+    <rosparam param="disable_pub_plugins">
+      - 'image_transport/compressed'
+      - 'image_transport/compressedDepth'
+      - 'image_transport/theora'
+    </rosparam>
+  </group>
+  <group ns="diff_image" >
+    <rosparam param="disable_pub_plugins">
+      - 'image_transport/compressed'
+      - 'image_transport/compressedDepth'
+      - 'image_transport/theora'
+    </rosparam>
+  </group>
+  <group ns="distorted/image" >
+    <rosparam param="disable_pub_plugins">
+      - 'image_transport/compressed'
+      - 'image_transport/compressedDepth'
+      - 'image_transport/theora'
+    </rosparam>
+  </group>
+  <group ns="image_color" >
+    <rosparam param="disable_pub_plugins">
+      - 'image_transport/compressed'
+      - 'image_transport/compressedDepth'
+      - 'image_transport/theora'
+    </rosparam>
+  </group>
+  <group ns="image_rect" >
+    <rosparam param="disable_pub_plugins">
+      - 'image_transport/compressed'
+      - 'image_transport/compressedDepth'
+      - 'image_transport/theora'
+    </rosparam>
+  </group>
+  <group ns="image_mono" >
+    <rosparam param="disable_pub_plugins">
+      - 'image_transport/compressed'
+      - 'image_transport/compressedDepth'
+      - 'image_transport/theora'
+    </rosparam>
+  </group>
+  <group ns="image_rect_color" >
+    <rosparam param="disable_pub_plugins">
+      - 'image_transport/compressed'
+      - 'image_transport/compressedDepth'
+      - 'image_transport/theora'
+    </rosparam>
+  </group>
+  </group>  <!-- if distort_then_rectify -->
+
+  <node name="rqt_generic" pkg="rqt_gui" type="rqt_gui" 
+      args="--perspective-file $(find vimjay)/config/distort.perspective" 
+      output="screen"
+      if="$(arg use_rqt)" >
+  </node>
+</launch>

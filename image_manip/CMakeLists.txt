@@ -36,6 +36,8 @@ include_directories(
 
 add_library(image_manip
   src/convert.cpp
+  src/cv_distort_image.cpp
+  # src/distort_image.cpp
   src/iir_image.cpp
   src/image_delay.cpp
   src/image_deque.cpp
@@ -50,6 +52,9 @@ target_link_libraries(image_manip ${catkin_LIBRARIES})
 if(catkin_EXPORTED_LIBRARIES)
   add_dependencies(image_manip ${catkin_EXPORTED_LIBRARIES})
 endif()
+
+add_executable(distort_image src/distort_image.cpp)
+target_link_libraries(distort_image image_manip ${catkin_LIBRARIES})
 
 add_executable(convert_node src/convert_node.cpp)
 target_link_libraries(convert_node ${catkin_LIBRARIES})
