@@ -6,6 +6,13 @@
       Convert an image between any two valid Image types, also scale and shift
     </description>
   </class>
+  <class name="image_manip/Distort"
+      type="image_manip::Distort"
+      base_class_type="nodelet::Nodelet">
+    <description>
+      Distort the image - the inverse of undistortion
+    </description>
+  </class>
   <class name="image_manip/IIRImage"
       type="image_manip::IIRImage"
       base_class_type="nodelet::Nodelet">

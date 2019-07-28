@@ -6,6 +6,9 @@
   <arg name="image" default="$(find vimjay)/data/chess_640.png" />
   <arg name="distort_then_rectify" default="true" />
 
+  <node pkg="nodelet" type="nodelet" name="manager" args="manager"
+      output="screen"/>
+
   <node name="image" pkg="vimjay" type="image.py"
       args="$(arg image)"
       output="screen" >
@@ -27,8 +30,11 @@
   </node>
 
   <group ns="redistort" if="true" >
-  <node name="distort" pkg="image_manip" type="distort_image"
-      output="screen" >
+  <!--node name="distort" pkg="image_manip" type="distort_image"
+    output="screen" -->
+  <node pkg="nodelet" type="nodelet"
+      name="distort" output="screen"
+      args="load image_manip/distort manager" >
     <remap from="image" to="/image_rect" />
     <remap from="camera_info" to="/camera_info_unused" />
   </node>

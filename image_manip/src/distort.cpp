@@ -1,57 +1,42 @@
 #include <cv_bridge/cv_bridge.h>
 #include <image_manip/cv_distort_image.h>
-#include <image_transport/image_transport.h>
+#include <image_manip/distort.h>
 #include <opencv2/opencv.hpp>
-#include <ros/ros.h>
-#include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
 
 namespace image_manip
 {
 
-class DistortImage
+Distort::Distort()
 {
-public:
-  DistortImage();
-protected:
-  ros::NodeHandle nh_;
-  image_transport::ImageTransport it_;
-  image_transport::Publisher image_pub_;
-  bool use_debug_;
-  image_transport::Publisher debug_image_pub_;
-  ros::Publisher camera_info_pub_;
-  sensor_msgs::CameraInfo camera_info_;
-  image_transport::Subscriber image_sub_;
-  void imageCallback(const sensor_msgs::ImageConstPtr& msg);
-  ros::Subscriber camera_info_sub_;
-  void cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg);
-  cv::Mat camera_matrix_;
-  cv::Mat dist_coeffs_;
-  cv::Mat map_1_;
-  cv::Mat map_2_;
-  bool new_maps_needed_;
-};
+}
 
-DistortImage::DistortImage() :
-  it_(nh_),
-  use_debug_(false),
-  new_maps_needed_(true)
+Distort::~Distort()
 {
+}
+
+void Distort::onInit()
+{
+  it_ = std::make_shared<image_transport::ImageTransport>(getNodeHandle());
+
   // TODO(lucasw) use CameraPublisher to sync camera info and image?
   camera_matrix_ = cv::Mat(3, 3, CV_64F);
-  image_pub_ = it_.advertise("distorted/image", 1, true);
+  image_pub_ = it_->advertise("distorted/image", 1, true);
+
   ros::param::get("~use_debug", use_debug_);
-  if (use_debug_)
-    debug_image_pub_ = it_.advertise("debug_image", 1, true);
-  camera_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>("distorted/camera_info", 1);
-  image_sub_ = it_.subscribe("image", 1, &DistortImage::imageCallback, this);
-  camera_info_sub_ = nh_.subscribe("camera_info", 1, &DistortImage::cameraInfoCallback, this);
+  if (use_debug_) {
+    debug_image_pub_ = it_->advertise("debug_image", 1, true);
+  }
+
+  camera_info_pub_ = getNodeHandle().advertise<sensor_msgs::CameraInfo>("distorted/camera_info", 1);
+  image_sub_ = it_->subscribe("image", 1, &Distort::imageCallback, this);
+  camera_info_sub_ = getNodeHandle().subscribe("camera_info", 1, &Distort::cameraInfoCallback, this);
 }
 
 // TODO(lucasw) this use of a non synchronized callback is really non-standard
 // should use a TimeSynchronizer and expect the camera info to have matching
 // headers with the image.
-void DistortImage::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg)
+void Distort::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg)
 {
   camera_info_ = *msg;
 
@@ -89,7 +74,7 @@ void DistortImage::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& m
   // ROS_INFO_STREAM(dist_coeffs_);
 }
 
-void DistortImage::imageCallback(const sensor_msgs::ImageConstPtr& msg)
+void Distort::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
   if (camera_matrix_.empty())
     return;
@@ -153,9 +138,5 @@ void DistortImage::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 
 }  // namespace image_manip
 
-int main(int argc, char** argv)
-{
-  ros::init(argc, argv, "distort_image");
-  image_manip::DistortImage distort_image;
-  ros::spin();
-}
+#include <pluginlib/class_list_macros.h>
+PLUGINLIB_EXPORT_CLASS(image_manip::Distort, nodelet::Nodelet)
