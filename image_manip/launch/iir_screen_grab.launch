@@ -7,7 +7,7 @@
 
   <group ns="image_source">
 
-    <node name="nodelet_manager" pkg="nodelet" type="nodelet" 
+    <node name="nodelet_manager" pkg="nodelet" type="nodelet"
         args="manager" output="screen" />
 
 		<node name="screen_grab" pkg="nodelet" type="nodelet"
@@ -28,7 +28,7 @@
     </rosparam>
     </group>
 
-    <node pkg="nodelet" type="nodelet" 
+    <node pkg="nodelet" type="nodelet"
         name="resize0"
         args="load image_manip/Resize nodelet_manager"
         output="screen">
@@ -39,7 +39,7 @@
       <remap from="image_out" to="resized"/>
     </node>
 
-    <node pkg="nodelet" type="nodelet" 
+    <node pkg="nodelet" type="nodelet"
         name="iir0"
         args="load image_manip/IIRImage nodelet_manager"
         output="screen">
@@ -50,8 +50,8 @@
     </node>
 
   </group>
-  <node name="rqt_generic" pkg="rqt_gui" type="rqt_gui" 
-      args="--perspective-file $(find image_manip)/config/iir.perspective" 
+  <node name="rqt_generic" pkg="rqt_gui" type="rqt_gui"
+      args="--perspective-file $(find image_manip)/config/iir.perspective"
       output="screen"
       if="true">
   </node>

@@ -6,8 +6,8 @@
   <arg name="frame_rate" default="10"/>
   <arg name="use_rqt" default="true"/>
 
-  <node name="nodelet_manager" pkg="nodelet" type="nodelet" 
-        args="manager" output="screen" 
+  <node name="nodelet_manager" pkg="nodelet" type="nodelet"
+        args="manager" output="screen"
         ns="image_source" >
     <!-- this should be read in the private namespace, image_publisher needs to be fixed -->
     <param name="publish_rate" value="0.5"/>
@@ -50,7 +50,7 @@
     </rosparam>
     </group>
 
-    <node pkg="nodelet" type="nodelet" 
+    <node pkg="nodelet" type="nodelet"
         name="resize0"
         args="load image_manip/Resize nodelet_manager"
         output="screen">
@@ -61,7 +61,7 @@
       <remap from="image_out" to="resized"/>
     </node>
 
-    <node pkg="nodelet" type="nodelet" 
+    <node pkg="nodelet" type="nodelet"
         name="roto_zoom0"
         args="load image_manip/RotoZoom nodelet_manager"
         output="screen">
@@ -72,8 +72,8 @@
     </node>
 
   </group>
-  <node name="rqt_generic" pkg="rqt_gui" type="rqt_gui" 
-      args="--perspective-file $(find image_manip)/config/rotozoom.perspective" 
+  <node name="rqt_generic" pkg="rqt_gui" type="rqt_gui"
+      args="--perspective-file $(find image_manip)/config/rotozoom.perspective"
       output="screen"
       if="$(arg use_rqt)">
   </node>

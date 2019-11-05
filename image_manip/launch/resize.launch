@@ -96,7 +96,7 @@
       <param name="pixel_format" value="yuyv"/>
     </node>
 
-    <node pkg="nodelet" type="nodelet" 
+    <node pkg="nodelet" type="nodelet"
         name="resize0"
         args="load image_manip/Resize manager"
         output="screen">
