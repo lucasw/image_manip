@@ -155,16 +155,23 @@ void IIRImage::update(const ros::TimerEvent& e)
 
     const double bn = b_coeffs_[i];
     if (out_frame.empty())
+    {
       out_frame = in_cv_images_[i]->image * bn;
-    else if ((out_frame.size() == in_cv_images_[i]->image.size()) &&
+    }
+    else if (// (out_frame.size() == in_cv_images_[i]->image.size()) &&
              (out_frame.type() == in_cv_images_[i]->image.type()))
     {
       // TODO(lucasw) if size/type mismatch have optional mode
       // to convert the cv_ptr image.
+      cv::Mat resized;
+      cv::resize(in_cv_images_[i]->image, resized,
+          out_frame.size(),
+          cv::INTER_NEAREST);
+
       if (bn > 0)
-        out_frame += in_cv_images_[i]->image * bn;
+        out_frame += resized * bn;
       else if (bn < 0)
-        out_frame -= in_cv_images_[i]->image * -bn;
+        out_frame -= resized * -bn;
     }
   }  // loop through b coefficient inds
   if (out_frame.empty())
