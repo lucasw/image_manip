@@ -52,6 +52,8 @@ class IIRImage : public nodelet::Nodelet
   // TODO(lucasw) should this be ImageTransport- is it faster?
   std::vector<ros::Subscriber> image_subs_;
 
+  void updateTopics(image_manip::IIRImageConfig& config);
+
   image_manip::IIRImageConfig config_;
   typedef dynamic_reconfigure::Server<image_manip::IIRImageConfig> ReconfigureServer;
   boost::shared_ptr< ReconfigureServer > server_;

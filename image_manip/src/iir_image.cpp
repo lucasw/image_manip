@@ -49,11 +49,34 @@ IIRImage::~IIRImage()
 {
 }
 
+void IIRImage::updateTopics(image_manip::IIRImageConfig& config)
+{
+  std::vector<std::string*> topics;
+  topics.resize(8);
+  topics[0] = &config.topic0;
+  topics[1] = &config.topic1;
+  topics[2] = &config.topic2;
+  topics[3] = &config.topic3;
+  topics[4] = &config.topic4;
+  topics[5] = &config.topic5;
+  topics[6] = &config.topic6;
+  topics[7] = &config.topic7;
+
+  for (size_t i = 0; i < 8; ++i) {
+    if (i < image_subs_.size()) {
+      *topics[i] = image_subs_[i].getTopic();
+    } else {
+      *topics[i] = "none";
+    }
+  }
+}
+
 void IIRImage::callback(
     image_manip::IIRImageConfig& config,
     uint32_t level)
 {
   updateTimer(timer_, config.frame_rate, config_.frame_rate);
+  updateTopics(config);
   config_ = config;
 
   if (level & 2)
@@ -277,6 +300,7 @@ void IIRImage::onInit()
           boost::bind(&IIRImage::imagesCallback, this, _1, i)));
     }
     // getPrivateNodeHandle().getParam("a_coeffs", a_coeffs_);
+    updateTopics(config_);
   }
   else
   {
