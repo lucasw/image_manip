@@ -225,6 +225,15 @@ void RotoZoom::update(const ros::TimerEvent& e)
   pub_.publish(output_image);
 }
 
+void RotoZoom::paramCallback(std_msgs::Float32::ConstPtr msg, const std::string name)
+{
+  if (params_.count(name) > 0) {
+    *params_[name] = msg->data;
+  } else {
+    ROS_ERROR_STREAM("no name " << name << " in params");
+  }
+}
+
 void RotoZoom::onInit()
 {
   pub_ = getNodeHandle().advertise<sensor_msgs::Image>("image_out", 5);
@@ -234,8 +243,25 @@ void RotoZoom::onInit()
       boost::bind(&RotoZoom::callback, this, _1, _2);
   server_->setCallback(cbt);
 
+  params_["phi"] = &config_.phi;
+  params_["theta"] = &config_.theta;
+  params_["psi"] = &config_.psi;
+  params_["center_x"] = &config_.center_x;
+  params_["center_y"] = &config_.center_y;
+  params_["off_x"] = &config_.off_x;
+  params_["off_y"] = &config_.off_y;
+  params_["z"] = &config_.z;
+  params_["z_scale"] = &config_.z_scale;
+
   sub_ = getNodeHandle().subscribe("image_in", 5,
       &RotoZoom::imageCallback, this);
+
+  std::vector<std::string> params = {"phi", "theta", "psi",
+    "center_x", "center_y", "off_x", "off_y", "z", "z_scale"};
+  for (const auto& param : params) {
+    param_sub_[param] = getPrivateNodeHandle().subscribe<std_msgs::Float32>(
+        param, 1, boost::bind(&RotoZoom::paramCallback, this, _1, param));
+  }
 
   background_sub_ = getNodeHandle().subscribe("background_image", 5,
       &RotoZoom::backgroundImageCallback, this);

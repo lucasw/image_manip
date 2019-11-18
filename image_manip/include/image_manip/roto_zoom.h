@@ -37,6 +37,7 @@
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
+#include <std_msgs/Float32.h>
 #include <vector>
 
 namespace image_manip
@@ -48,6 +49,10 @@ class RotoZoom : public nodelet::Nodelet
   ros::Publisher pub_;
   ros::Subscriber sub_;
   ros::Subscriber background_sub_;
+
+  std::map<std::string, ros::Subscriber> param_sub_;
+  std::map<std::string, double*> params_;
+  void paramCallback(std_msgs::Float32::ConstPtr msg, const std::string name);
 
   image_manip::RotoZoomConfig config_;
   typedef dynamic_reconfigure::Server<image_manip::RotoZoomConfig> ReconfigureServer;
