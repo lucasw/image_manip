@@ -31,6 +31,7 @@
 
 #include <image_manip/utility_ros.h>
 #include <opencv2/imgproc.hpp>
+#include <string>
 
 namespace image_manip
 {

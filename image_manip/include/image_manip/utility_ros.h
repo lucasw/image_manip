@@ -35,6 +35,7 @@
 #include <opencv2/core.hpp>
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
+#include <string>
 
 namespace image_manip
 {
@@ -48,6 +49,6 @@ namespace image_manip
 
   bool sameImageType(const sensor_msgs::Image& im1, const sensor_msgs::ImageConstPtr& im2);
   bool sameImageType(const sensor_msgs::ImageConstPtr& im1, const sensor_msgs::ImageConstPtr& im2);
-}
+}  // namespace image_manip
 
 #endif  // IMAGE_MANIP_UTILITY_ROS_H

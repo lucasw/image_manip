@@ -28,13 +28,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef IMAGE_MANIP_RESIZE_H
-#define IMAGE_MANIP_RESIZE_H
+#ifndef IMAGE_MANIP_DISTORT_H
+#define IMAGE_MANIP_DISTORT_H
 
 #include <deque>
 #include <dynamic_reconfigure/server.h>
 #include <image_transport/image_transport.h>
 // #include <image_manip/DistortConfig.h>
+#include <memory>
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
@@ -86,4 +87,4 @@ public:
 
 }  // namespace image_manip
 
-#endif  // IMAGE_MANIP_RESIZE_H
+#endif  // IMAGE_MANIP_DISTORT_H

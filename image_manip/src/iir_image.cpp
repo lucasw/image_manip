@@ -34,6 +34,8 @@
 #include <image_manip/utility_ros.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
+#include <string>
+#include <vector>
 
 
 namespace image_manip
@@ -181,7 +183,7 @@ void IIRImage::update(const ros::TimerEvent& e)
     {
       out_frame = in_cv_images_[i]->image * bn;
     }
-    else if (// (out_frame.size() == in_cv_images_[i]->image.size()) &&
+    else if (  // (out_frame.size() == in_cv_images_[i]->image.size()) &&
              (out_frame.type() == in_cv_images_[i]->image.type()))
     {
       // TODO(lucasw) if size/type mismatch have optional mode

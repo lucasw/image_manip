@@ -28,8 +28,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef IMAGE_MANIP_RESIZE_H
-#define IMAGE_MANIP_RESIZE_H
+#ifndef IMAGE_MANIP_CONVERT_H
+#define IMAGE_MANIP_CONVERT_H
 
 #include <deque>
 #include <dynamic_reconfigure/server.h>
@@ -69,4 +69,4 @@ public:
 
 }  // namespace image_manip
 
-#endif  // IMAGE_MANIP_RESIZE_H
+#endif  // IMAGE_MANIP_CONVERT_H

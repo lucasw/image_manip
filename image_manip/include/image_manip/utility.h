@@ -47,6 +47,6 @@ namespace image_manip
       const float& phi, const float& theta, const float& psi,
       float& off_x, float& off_y, const float& z, const float& z_scale,
       cv::Point3f& center, cv::Mat& transform);
-}
+}  // namespace image_manip
 
 #endif  // IMAGE_MANIP_UTILITY_H

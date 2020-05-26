@@ -34,6 +34,8 @@
 #include <image_manip/utility_ros.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
+#include <string>
+#include <vector>
 
 
 namespace image_manip

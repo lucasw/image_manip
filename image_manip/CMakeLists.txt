@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 2.8.3)
-project(image_manip)
+cmake_minimum_required(VERSION 3.0)
+project(image_manip VERSION 0.0.1)
 
 # Make this build in Kinetic
 add_compile_options(-std=c++14)
@@ -15,6 +15,10 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
 )
 
+set(
+  ROSLINT_CPP_OPTS
+  "--extensions=cpp,h,hpp" "--filter=-whitespace/braces,-runtime/references"
+)
 roslint_cpp()
 
 generate_dynamic_reconfigure_options(

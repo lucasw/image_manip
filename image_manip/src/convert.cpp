@@ -393,7 +393,6 @@ void Convert::update(const ros::TimerEvent& e)
       if ((config_.color == Convert_BGRA) || (config_.color == Convert_BGRA))
         enc.str("64FC4");
     }
-
   }
 
   cv_image.encoding = enc.str();

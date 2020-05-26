@@ -34,10 +34,12 @@
 #include <deque>
 #include <dynamic_reconfigure/server.h>
 #include <image_manip/RotoZoomConfig.h>
+#include <map>
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
 #include <std_msgs/Float32.h>
+#include <string>
 #include <vector>
 
 namespace image_manip
