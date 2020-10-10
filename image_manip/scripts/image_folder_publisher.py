@@ -11,6 +11,7 @@ import glob
 import numpy
 import rospy
 import sys
+import traceback
 
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import CameraInfo, Image
@@ -21,6 +22,8 @@ class ImageFolderPublisher(object):
         self.folder = rospy.get_param("~folder", "")
         self.encoding = rospy.get_param("~encoding", "bgr8")
         self.period = rospy.get_param("~update_period", 0.15)
+        rospy.loginfo('update period {}'.format(self.period))
+        self.frame = rospy.get_param("~frame", "image_folder")
 
         self.camera_info_pub = None
         if True:
@@ -64,15 +67,16 @@ class ImageFolderPublisher(object):
 
             img_msg = self.bridge.cv2_to_imgmsg(cv_image, self.encoding)
             img_msg.header.stamp = event.current_real
+            img_msg.header.frame_id = self.frame
             self.image_pub.publish(img_msg)
             if self.camera_info_pub is not None:
                 camera_info = self.camera_info_manager.getCameraInfo()
-                camera_info.header.stamp = img_msg.header.stamp
+                camera_info.header = img_msg.header
                 self.camera_info_pub.publish(camera_info)
 
         except Exception as ex:
-            rospy.loginfo(ex)
-            raise(ex)
+            rospy.loginfo('{} {}'.format(str(ex), traceback.format_exc()))
+            # raise(ex)
 
 if __name__ == '__main__':
     rospy.init_node("image_folder_publisher")
