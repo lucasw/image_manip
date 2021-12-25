@@ -32,8 +32,13 @@ generate_dynamic_reconfigure_options(
 
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES image_manip
-  CATKIN_DEPENDS nodelet roscpp sensor_msgs std_msgs
+  LIBRARIES ${PROJECT_NAME}
+  CATKIN_DEPENDS
+  dynamic_reconfigure
+  nodelet
+  roscpp
+  sensor_msgs
+  std_msgs
 )
 
 include_directories(
@@ -41,7 +46,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(image_manip
+add_library(${PROJECT_NAME}
   src/convert.cpp
   src/cv_distort_image.cpp
   src/distort.cpp
@@ -52,16 +57,22 @@ add_library(image_manip
   src/roto_zoom.cpp
   src/utility.cpp
   src/utility_ros.cpp)
-add_dependencies(image_manip ${PROJECT_NAME}_gencfg)
-target_link_libraries(image_manip ${catkin_LIBRARIES})
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg)
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 
 # TODO(lucasw) is this needed?
 if(catkin_EXPORTED_LIBRARIES)
-  add_dependencies(image_manip ${catkin_EXPORTED_LIBRARIES})
+  add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_LIBRARIES})
 endif()
 
+catkin_install_python(PROGRAMS
+  scripts/animated_gif.py
+  scripts/image_folder_publisher.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
 # add_executable(distort_image src/distort_image.cpp)
-# target_link_libraries(distort_image image_manip ${catkin_LIBRARIES})
+# target_link_libraries(distort_image ${PROJECT_NAME} ${catkin_LIBRARIES})
 
 add_executable(convert_node src/convert_node.cpp)
 target_link_libraries(convert_node ${catkin_LIBRARIES})
@@ -81,14 +92,25 @@ target_link_libraries(resize_node ${catkin_LIBRARIES})
 add_executable(roto_zoom_node src/roto_zoom_node.cpp)
 target_link_libraries(roto_zoom_node ${catkin_LIBRARIES})
 
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
+)
 
-install(TARGETS image_manip iir_image_node image_delay_node image_deque_node resize_node roto_zoom_node
+install(TARGETS
+  convert_node
+  iir_image_node
+  image_delay_node
+  image_deque_node
+  ${PROJECT_NAME}
+  resize_node
+  roto_zoom_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 install(FILES
-  nodelet_image_manip.xml
+  nodelet_${PROJECT_NAME}.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
