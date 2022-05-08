@@ -126,7 +126,7 @@ void Resize::onInit()
 
   server_.reset(new ReconfigureServer(dr_mutex_, getPrivateNodeHandle()));
   dynamic_reconfigure::Server<image_manip::ResizeConfig>::CallbackType cbt =
-      boost::bind(&Resize::callback, this, _1, _2);
+      boost::bind(&Resize::callback, this, boost::placeholders::_1, boost::placeholders::_2);
   server_->setCallback(cbt);
 
   sub_ = getNodeHandle().subscribe("image_in", 5,

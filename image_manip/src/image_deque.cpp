@@ -215,7 +215,7 @@ void ImageDeque::onInit()
 
   server_.reset(new ReconfigureServer(dr_mutex_, getPrivateNodeHandle()));
   dynamic_reconfigure::Server<image_manip::ImageDequeConfig>::CallbackType cbt =
-      boost::bind(&ImageDeque::callback, this, _1, _2);
+      boost::bind(&ImageDeque::callback, this, boost::placeholders::_1, boost::placeholders::_2);
   server_->setCallback(cbt);
 
   timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0),

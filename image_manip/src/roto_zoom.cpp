@@ -242,7 +242,7 @@ void RotoZoom::onInit()
 
   server_.reset(new ReconfigureServer(dr_mutex_, getPrivateNodeHandle()));
   dynamic_reconfigure::Server<image_manip::RotoZoomConfig>::CallbackType cbt =
-      boost::bind(&RotoZoom::callback, this, _1, _2);
+      boost::bind(&RotoZoom::callback, this, boost::placeholders::_1, boost::placeholders::_2);
   server_->setCallback(cbt);
 
   params_["phi"] = &config_.phi;
@@ -262,7 +262,7 @@ void RotoZoom::onInit()
     "center_x", "center_y", "off_x", "off_y", "z", "z_scale"};
   for (const auto& param : params) {
     param_sub_[param] = getPrivateNodeHandle().subscribe<std_msgs::Float32>(
-        param, 1, boost::bind(&RotoZoom::paramCallback, this, _1, param));
+        param, 1, boost::bind(&RotoZoom::paramCallback, this, boost::placeholders::_1, param));
   }
 
   background_sub_ = getNodeHandle().subscribe("background_image", 5,

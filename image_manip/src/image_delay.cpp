@@ -103,7 +103,7 @@ void ImageDelay::onInit()
 
   server_.reset(new ReconfigureServer(dr_mutex_, getPrivateNodeHandle()));
   dynamic_reconfigure::Server<image_manip::DelayConfig>::CallbackType cbt =
-      boost::bind(&ImageDelay::callback, this, _1, _2);
+      boost::bind(&ImageDelay::callback, this, boost::placeholders::_1, boost::placeholders::_2);
   server_->setCallback(cbt);
 
   // if the input frame rate is too big and the delay too long, and queue_size

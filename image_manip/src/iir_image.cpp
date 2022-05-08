@@ -276,7 +276,7 @@ void IIRImage::onInit()
 
   server_.reset(new ReconfigureServer(dr_mutex_, getPrivateNodeHandle()));
   dynamic_reconfigure::Server<image_manip::IIRImageConfig>::CallbackType cbt =
-      boost::bind(&IIRImage::callback, this, _1, _2);
+      boost::bind(&IIRImage::callback, this, boost::placeholders::_1, boost::placeholders::_2);
   server_->setCallback(cbt);
 
   getPrivateNodeHandle().getParam("use_time_sequence", use_time_sequence_);
@@ -299,7 +299,7 @@ void IIRImage::onInit()
       ROS_INFO_STREAM("subscribe " << ss.str() << " " << b_coeffs_[i]);
       image_subs_.push_back(getNodeHandle().subscribe<sensor_msgs::Image>(
           ss.str(), 1,
-          boost::bind(&IIRImage::imagesCallback, this, _1, i)));
+          boost::bind(&IIRImage::imagesCallback, this, boost::placeholders::_1, i)));
     }
     // getPrivateNodeHandle().getParam("a_coeffs", a_coeffs_);
     updateTopics(config_);
