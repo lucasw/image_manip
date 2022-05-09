@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 project(image_manip VERSION 0.0.1)
 
-# Make this build in Kinetic
-add_compile_options(-std=c++14)
-
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   dynamic_reconfigure
