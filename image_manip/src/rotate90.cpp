@@ -32,6 +32,7 @@
 #include <image_manip/rotate90.h>
 #include <image_manip/utility.h>
 #include <image_manip/utility_ros.h>
+#include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
 #include <string>
@@ -77,6 +78,94 @@ void Rotate90::imageCallback(const sensor_msgs::ImageConstPtr& msg)
   }
 }
 
+void Rotate90::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg)
+{
+  if (!config_.enable)
+    return;
+
+  sensor_msgs::CameraInfo rotated_ci = *msg;
+  rotated_ci.header.frame_id += config_.frame_postfix;
+
+  // instrinsic
+  const auto KFX = 0;
+  const auto KCX = 2;
+
+  const auto KFY = 4;
+  const auto KCY = 5;
+
+  // projection
+  const auto PFX = 0;
+  const auto PCX = 2;
+  const auto PTX = 3;
+
+  const auto PFY = 5;
+  const auto PCY = 6;
+  const auto PTY = 7;
+
+  // TODO(lucasw) rotate the distortion_model - just switch p1 and p2 for 90 degree rotations?
+  // https://answers.opencv.org/question/221903/rotating-camera-intrinsics-matrix/
+  // (though it has an error)
+  switch (config_.rotation_mode)
+  {
+    case 0:
+      // do nothing, use camera info as-is
+      break;
+    case 1:
+      // clockwise
+      rotated_ci.K[KFX] = msg->K[KFY];
+      rotated_ci.K[KFY] = msg->K[KFX];
+
+      rotated_ci.K[KCX] = msg->height - msg->K[KCY];
+      rotated_ci.K[KCY] = msg->K[KCX];
+
+      rotated_ci.P[PFX] = msg->P[PFY];
+      rotated_ci.P[PFY] = msg->P[PFX];
+
+      rotated_ci.P[PCX] = msg->height - msg->P[PCY];
+      rotated_ci.P[PCY] = msg->P[PCX];
+
+      // TODO(lucasw) not sure about these
+      rotated_ci.P[PTX] = msg->P[PTY];
+      rotated_ci.P[PTY] = msg->P[PTX];
+
+      if (msg->D.size() > 4) {
+        rotated_ci.D[2] = msg->D[3];
+        rotated_ci.D[3] = msg->D[2];
+      }
+      break;
+    case 2:
+      rotated_ci.K[KCX] = msg->width - msg->K[KCX];
+      rotated_ci.K[KCY] = msg->height - msg->K[KCY];
+
+      rotated_ci.P[PCX] = msg->width - msg->P[PCX];
+      rotated_ci.P[PCY] = msg->height - msg->P[PCY];
+      break;
+    case 3:
+      rotated_ci.K[KFX] = msg->K[KFY];
+      rotated_ci.K[KFY] = msg->K[KFX];
+
+      rotated_ci.K[KCX] = msg->K[KCY];
+      rotated_ci.K[KCY] = msg->width - msg->K[KCX];
+
+      rotated_ci.P[PFX] = msg->P[PFY];
+      rotated_ci.P[PFY] = msg->P[PFX];
+
+      rotated_ci.P[PCX] = msg->P[PCY];
+      rotated_ci.P[PCY] = msg->width - msg->P[PCX];
+
+      // TODO(lucasw) not sure about these
+      rotated_ci.P[PTX] = msg->P[PTY];
+      rotated_ci.P[PTY] = msg->P[PTX];
+
+      if (msg->D.size() > 4) {
+        rotated_ci.D[2] = msg->D[3];
+        rotated_ci.D[3] = msg->D[2];
+      }
+      break;
+  }
+  camera_info_pub_.publish(rotated_ci);
+}
+
 void Rotate90::update(const ros::TimerEvent& e)
 {
   if (!config_.enable)
@@ -111,7 +200,7 @@ void Rotate90::update(const ros::TimerEvent& e)
   // TODO(lucasw) generate and publish the frame here for convenience?
   // otherwise user needs to set up static transform publisher that needs
   // to use the right input and output frame_ids
-  cv_image.header.frame_id += "_rotated";
+  cv_image.header.frame_id += config_.frame_postfix;
   cv_image.encoding = encoding;
 
   bool do_publish = true;
@@ -144,7 +233,8 @@ void Rotate90::update(const ros::TimerEvent& e)
 void Rotate90::onInit()
 {
   dirty_ = false;
-  pub_ = getNodeHandle().advertise<sensor_msgs::Image>("image_out", 5);
+  pub_ = getNodeHandle().advertise<sensor_msgs::Image>("rotated/image", 5);
+  camera_info_pub_ = getNodeHandle().advertise<sensor_msgs::CameraInfo>("rotated/camera_info", 5);
 
   server_.reset(new ReconfigureServer(dr_mutex_, getPrivateNodeHandle()));
   dynamic_reconfigure::Server<image_manip::Rotate90Config>::CallbackType cbt =
@@ -153,6 +243,8 @@ void Rotate90::onInit()
 
   sub_ = getNodeHandle().subscribe("image_in", 5,
       &Rotate90::imageCallback, this);
+
+  camera_info_sub_ = getNodeHandle().subscribe("camera_info", 1, &Rotate90::cameraInfoCallback, this);
 
   timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0),
     &Rotate90::update, this);

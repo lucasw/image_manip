@@ -36,6 +36,7 @@
 #include <image_manip/Rotate90Config.h>
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
+#include <sensor_msgs/CameraInfo.h>
 #include <vector>
 
 namespace image_manip
@@ -45,7 +46,10 @@ class Rotate90 : public nodelet::Nodelet
 {
   // image_transport::ImageTransport it_;
   ros::Publisher pub_;
+  ros::Publisher camera_info_pub_;
+
   ros::Subscriber sub_;
+  ros::Subscriber camera_info_sub_;
 
   image_manip::Rotate90Config config_;
   typedef dynamic_reconfigure::Server<image_manip::Rotate90Config> ReconfigureServer;
@@ -57,6 +61,7 @@ class Rotate90 : public nodelet::Nodelet
   std::deque<sensor_msgs::ImageConstPtr> images_;
   bool dirty_;
   void imageCallback(const sensor_msgs::ImageConstPtr& msg);
+  void cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg);
   ros::Timer timer_;
   void update(const ros::TimerEvent& e);
 

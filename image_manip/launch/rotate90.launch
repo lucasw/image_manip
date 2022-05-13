@@ -22,6 +22,7 @@
     <!-- 90 counter clockwise -->
     <param name="rotation_mode" value="3" />
     <remap from="image_in" to="image_source/image_raw" />
+    <remap from="camera_info" to="image_source/camera_info" />
     <remap from="image_out" to="rotated90ccw" />
   </node>
 
