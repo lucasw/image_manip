@@ -24,6 +24,7 @@ generate_dynamic_reconfigure_options(
   cfg/IIRImage.cfg
   cfg/ImageDeque.cfg
   cfg/Resize.cfg
+  cfg/Rotate90.cfg
   cfg/RotoZoom.cfg
 )
 
@@ -51,6 +52,7 @@ add_library(${PROJECT_NAME}
   src/image_delay.cpp
   src/image_deque.cpp
   src/resize.cpp
+  src/rotate90.cpp
   src/roto_zoom.cpp
   src/utility.cpp
   src/utility_ros.cpp)
@@ -86,6 +88,9 @@ target_link_libraries(image_deque_node ${catkin_LIBRARIES})
 add_executable(resize_node src/resize_node.cpp)
 target_link_libraries(resize_node ${catkin_LIBRARIES})
 
+# add_executable(rotate90_node src/rotate90_node.cpp)
+# target_link_libraries(rotate90_node ${catkin_LIBRARIES})
+
 add_executable(roto_zoom_node src/roto_zoom_node.cpp)
 target_link_libraries(roto_zoom_node ${catkin_LIBRARIES})
 
@@ -101,6 +106,7 @@ install(TARGETS
   image_deque_node
   ${PROJECT_NAME}
   resize_node
+  # rotate90_node
   roto_zoom_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

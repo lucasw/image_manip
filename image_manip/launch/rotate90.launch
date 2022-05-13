@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="frame_rate" default="0" />
+  <arg name="manager_name" default="manager" />
+
+  <node pkg="nodelet" type="nodelet" name="$(arg manager_name)" args="manager"
+      output="screen" />
+
+  <node pkg="nodelet" type="nodelet"
+      name="image_source"
+      output="screen"
+      args="load image_publisher/image_publisher $(arg manager_name)">
+    <param name="filename" value="$(find vimjay)/data/gradient_conical.png" />
+    <param name="publish_rate" value="4.0" />
+  </node>
+
+  <node pkg="nodelet" type="nodelet"
+      name="rotate90ccw"
+      args="load image_manip/Rotate90 $(arg manager_name)"
+      output="screen">
+    <param name="frame_rate" value="$(arg frame_rate)" />
+    <!-- 90 counter clockwise -->
+    <param name="rotation_mode" value="3" />
+    <remap from="image_in" to="image_source/image_raw" />
+    <remap from="image_out" to="rotated90ccw" />
+  </node>
+
+  <!-- static transform publisher -->
+  <!-- TODO(lucasw) this is brittle because the user may rotate the image differently
+    with dynamic reconfigure or editing the default above and this won't match up,
+    or the frame_ids won't be right -->
+  <node name="camera_static_transform_publisher"
+      pkg="tf" type="static_transform_publisher"
+      args="1.0 0.0 0.0 -1.5707 0.0 -1.5707 map camera 50" />
+
+  <node name="rotated_static_transform_publisher"
+      pkg="tf" type="static_transform_publisher"
+      args="0 0 0 -1.5707963267948966 0 0 camera camera_rotated 50" />
+
+</launch>

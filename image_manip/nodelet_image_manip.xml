@@ -48,4 +48,11 @@
       Resize the image
     </description>
   </class>
+  <class name="image_manip/Rotate90"
+      type="image_manip::Rotate90"
+      base_class_type="nodelet::Nodelet">
+    <description>
+      Rotate the image 90/180/270
+    </description>
+  </class>
 </library>
