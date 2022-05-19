@@ -18,6 +18,9 @@ set(
 )
 roslint_cpp()
 
+set(ROSLINT_PYTHON_OPTS "--ignore=''" "1>&2")
+roslint_python()
+
 generate_dynamic_reconfigure_options(
   cfg/Convert.cfg
   cfg/Delay.cfg

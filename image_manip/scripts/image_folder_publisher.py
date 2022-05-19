@@ -5,16 +5,15 @@
 # Load a directory of images and publish the images in sequence in a loop
 # rosrun image_manip image_folder_publisher.py _folder:=`pwd`
 
-import camera_info_manager
-import cv2
 import glob
-import numpy
-import rospy
-import sys
 import traceback
 
-from cv_bridge import CvBridge, CvBridgeError
-from sensor_msgs.msg import CameraInfo, Image
+import camera_info_manager
+import cv2
+import rospy
+from cv_bridge import CvBridge
+from sensor_msgs.msg import CameraInfo
+from sensor_msgs.msg import Image
 
 
 class ImageFolderPublisher(object):
@@ -77,6 +76,7 @@ class ImageFolderPublisher(object):
         except Exception as ex:
             rospy.loginfo('{} {}'.format(str(ex), traceback.format_exc()))
             # raise(ex)
+
 
 if __name__ == '__main__':
     rospy.init_node("image_folder_publisher")
