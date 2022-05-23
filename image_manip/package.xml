@@ -31,6 +31,7 @@
   <run_depend>rqt_gui</run_depend>
   <run_depend>sensor_msgs</run_depend>
   <run_depend>std_msgs</run_depend>
+  <run_depend>tf</run_depend>
   <run_depend>usb_cam</run_depend>
   <run_depend>v4l2ucp</run_depend>
   <run_depend>vimjay</run_depend>
