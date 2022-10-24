@@ -32,9 +32,14 @@
 #define IMAGE_MANIP_UTILITY_H
 
 #include <opencv2/core.hpp>
+#include <sensor_msgs/CameraInfo.h>
 
 namespace image_manip
 {
+  void cameraInfoToCV(const sensor_msgs::CameraInfo::ConstPtr& msg,
+      cv::Matx33d& K,  // Describe current image (includes binning, ROI)
+      cv::Mat_<double>& D);  // Unaffected by binning, ROI - they are in ideal camera coordinates
+
   // TODO(lucasw) need a float parameter to scale between these two options
   // leave black borders
   bool resizeFixAspect(const cv::Mat& tmp0, cv::Mat& tmp1,

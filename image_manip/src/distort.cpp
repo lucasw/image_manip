@@ -31,6 +31,7 @@
 #include <cv_bridge/cv_bridge.h>
 #include <image_manip/cv_distort_image.h>
 #include <image_manip/distort.h>
+#include <image_manip/utility.h>
 #include <opencv2/opencv.hpp>
 #include <memory>
 #include <sensor_msgs/image_encodings.h>
@@ -72,14 +73,18 @@ void Distort::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg)
   camera_info_ = *msg;
 
   if (dist_coeffs_.rows != msg->D.size())
+  {
     new_maps_needed_ = true;
     dist_coeffs_ = cv::Mat(msg->D.size(), 1, CV_64F);
+  }
 
   for (size_t i = 0; i < msg->D.size(); ++i)
   {
     if (dist_coeffs_.at<double>(i, 0) != msg->D[i])
+    {
       new_maps_needed_ = true;
-    dist_coeffs_.at<double>(i, 0) = msg->D[i];
+      dist_coeffs_.at<double>(i, 0) = msg->D[i];
+    }
   }
 
   int ind = 0;
@@ -96,11 +101,16 @@ void Distort::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg)
       }
 
       if (camera_matrix_.at<double>(y, x) != msg->K[ind])
+      {
         new_maps_needed_ = true;
-      camera_matrix_.at<double>(y, x) = msg->K[ind];
+        camera_matrix_.at<double>(y, x) = msg->K[ind];
+      }
       ++ind;
     }
   }
+
+  // TODO(lucasw) need to convert cv::Mat to cv::Matx33d everywhere to use this
+  // cameraInfoToCV(msg, camera_matrix_, dist_coeffs_);
 
   // ROS_INFO_STREAM(dist_coeffs_);
 }

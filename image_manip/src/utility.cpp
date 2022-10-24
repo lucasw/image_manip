@@ -36,6 +36,75 @@
 namespace image_manip
 {
 
+// adapted from https://github.com/ros-perception/vision_opencv/blob/noetic/image_geometry/src/
+// pinhole_camera_model.cpp fromCameraInfo
+void cameraInfoToCV(const sensor_msgs::CameraInfo::ConstPtr& msg,
+    cv::Matx33d& K,  // Describe current image (includes binning, ROI)
+    cv::Mat_<double>& D)  // Unaffected by binning, ROI - they are in ideal camera coordinates
+{
+  // TODO(lucasw) this can't be const
+  auto cam_info = *msg;
+
+  cv::Matx34d P;  // Describe current image (includes binning, ROI)
+
+  int d_size = cam_info.D.size();
+  D = (d_size == 0) ? cv::Mat_<double>() : cv::Mat_<double>(1, d_size, cam_info.D.data());
+  auto K_full = cv::Matx33d(&cam_info.K[0]);
+  // TODO(lucasw) not actually using P_full_
+  auto P_full = cv::Matx34d(&cam_info.P[0]);
+
+  // Binning = 0 is considered the same as binning = 1 (no binning).
+  const uint32_t binning_x = cam_info.binning_x ? cam_info.binning_x : 1;
+  const uint32_t binning_y = cam_info.binning_y ? cam_info.binning_y : 1;
+
+  // ROI all zeros is considered the same as full resolution.
+  sensor_msgs::RegionOfInterest roi = cam_info.roi;
+  if (roi.x_offset == 0 && roi.y_offset == 0 && roi.width == 0 && roi.height == 0) {
+    roi.width  = cam_info.width;
+    roi.height = cam_info.height;
+  }
+
+  // If necessary, create new K and P adjusted for binning and ROI
+  /// @todo Calculate and use rectified ROI
+  const bool adjust_binning = (binning_x > 1) || (binning_y > 1);
+  const bool adjust_roi = (roi.x_offset != 0) || (roi.y_offset != 0);
+
+  if (!adjust_binning && !adjust_roi) {
+    K = K_full;
+    P = P_full;
+  } else {
+    K = K_full;
+    P = P_full;
+
+    // ROI is in full image coordinates, so change it first
+    if (adjust_roi) {
+      // Move principal point by the offset
+      /// @todo Adjust P by rectified ROI instead
+      K(0, 2) -= roi.x_offset;
+      K(1, 2) -= roi.y_offset;
+      P(0, 2) -= roi.x_offset;
+      P(1, 2) -= roi.y_offset;
+    }
+
+    if (binning_x > 1) {
+      const double scale_x = 1.0 / binning_x;
+      K(0, 0) *= scale_x;
+      K(0, 2) *= scale_x;
+      P(0, 0) *= scale_x;
+      P(0, 2) *= scale_x;
+      P(0, 3) *= scale_x;
+    }
+    if (binning_y > 1) {
+      const double scale_y = 1.0 / binning_y;
+      K(1, 1) *= scale_y;
+      K(1, 2) *= scale_y;
+      P(1, 1) *= scale_y;
+      P(1, 2) *= scale_y;
+      P(1, 3) *= scale_y;
+    }
+  }
+}
+
 /// resize the source tmp0 mat to fit inside tmp1 with borders
 /// tmp0 and tmp1 have to be initialized already
 /// TBD add another mode which chops off the edges so there
