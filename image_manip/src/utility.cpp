@@ -47,8 +47,18 @@ void cameraInfoToCV(const sensor_msgs::CameraInfo::ConstPtr& msg,
 
   cv::Matx34d P;  // Describe current image (includes binning, ROI)
 
-  int d_size = cam_info.D.size();
-  D = (d_size == 0) ? cv::Mat_<double>() : cv::Mat_<double>(1, d_size, cam_info.D.data());
+  const size_t d_size = cam_info.D.size();
+  // TODO(lucasw) initializing like this doesn't work, only coincidence when memory happened to be all zeros
+  // and it appeared to work
+  // D = (d_size == 0) ? cv::Mat_<double>() : cv::Mat_<double>(1, d_size, cam_info.D.data());
+  if (d_size > 0) {
+    D = cv::Mat_<double>(1, d_size);
+    for (size_t i = 0; i < d_size; ++i) {
+      D.at<double>(0, i) = cam_info.D[i];
+    }
+  } else {
+    D = cv::Mat_<double>();
+  }
   auto K_full = cv::Matx33d(&cam_info.K[0]);
   // TODO(lucasw) not actually using P_full_
   auto P_full = cv::Matx34d(&cam_info.P[0]);
