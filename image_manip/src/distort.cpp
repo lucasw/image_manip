@@ -179,5 +179,5 @@ void Distort::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 
 }  // namespace image_manip
 
-#include <pluginlib/class_list_macros.h>
+#include <pluginlib/class_list_macros.hpp>
 PLUGINLIB_EXPORT_CLASS(image_manip::Distort, nodelet::Nodelet)

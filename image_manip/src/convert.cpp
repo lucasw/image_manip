@@ -422,5 +422,5 @@ void Convert::onInit()
 
 };  // namespace image_manip
 
-#include <pluginlib/class_list_macros.h>
+#include <pluginlib/class_list_macros.hpp>
 PLUGINLIB_EXPORT_CLASS(image_manip::Convert, nodelet::Nodelet)
