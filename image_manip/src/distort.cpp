@@ -125,8 +125,12 @@ void Distort::imageCallback(const sensor_msgs::ImageConstPtr& msg)
   cv_bridge::CvImageConstPtr cv_ptr;
   try
   {
-    // TBD why converting to BGR8
-    cv_ptr = cv_bridge::toCvShare(msg, sensor_msgs::image_encodings::RGB8);
+    // TODO(lucasw) can this be done automatically by cv bridge?
+    if (msg->encoding == "rgb8") {
+      cv_ptr = cv_bridge::toCvShare(msg, sensor_msgs::image_encodings::RGB8);
+    } else {
+      cv_ptr = cv_bridge::toCvShare(msg, sensor_msgs::image_encodings::BGR8);
+    }
     //, "mono8"); // sensor_msgs::image_encodings::MONO8);
   }
   catch (cv_bridge::Exception& e)
