@@ -6,7 +6,8 @@
   <arg name="use_image" default="true" doc="publish an image from disk" />
   <arg name="image" default="$(find vimjay)/data/chess_640.png" />
   <arg name="image_topic" default="image" />
-  <arg name="camera_info_topic" default="image" />
+  <!-- can't do camera_info remapping, need to make sure the right camera_info is paired with the image topic -->
+  <!-- arg name="camera_info_topic" default="camera_info" /-->
   <arg name="image_transport" default="raw" doc="subscribe to raw image, otherwise set 'compressed'" />
 
   <arg name="distort_then_rectify" default="true" />
@@ -34,7 +35,8 @@
         args="load image_proc/rectify /nodelet_manager"
         output="screen">
       <remap from="image_mono" to="$(arg image_topic)" />
-      <remap from="camera_info" to="$(arg camera_info_topic)" />
+      <!-- this remapping doesn't work, because of image transport?  Tilde prefix doesn't work also -->
+      <!--remap from="~camera_info" to="$(arg camera_info_topic)" /-->
       <remap from="image_rect" to="image_rect_color" />
       <param name="image_transport" value="$(arg image_transport)" />
     </node>
@@ -82,7 +84,7 @@
           args="load image_manip/Distort /nodelet_manager"
           output="screen">
         <remap from="image" to="image_rect_color" />
-        <remap from="camera_info" to="$(arg camera_info_topic)" />
+        <!-- remap from="camera_info" to="$(arg camera_info_topic)" /-->
       </node>
       <group ns="distorted/image" >
         <rosparam param="disable_pub_plugins">
@@ -104,7 +106,7 @@
         name="load_distort1" output="screen"
         args="load image_manip/Distort /nodelet_manager" >
       <remap from="image" to="/image" />
-      <remap from="camera_info" to="/camera_info" />
+      <!-- remap from="camera_info" to="$(arg camera_info_topic)" /-->
       <param name="use_debug" value="$(arg use_debug)" />
     </node>
 
