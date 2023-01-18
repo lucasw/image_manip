@@ -3,15 +3,22 @@
   <arg name="use_debug" default="false" />
   <arg name="use_dr_camera_info" default="true" />
   <arg name="use_rqt" default="true" />
+  <arg name="use_image" default="true" doc="publish an image from disk" />
   <arg name="image" default="$(find vimjay)/data/chess_640.png" />
+  <arg name="image_topic" default="image" />
+  <arg name="camera_info_topic" default="image" />
+  <arg name="image_transport" default="raw" doc="subscribe to raw image, otherwise set 'compressed'" />
+
   <arg name="distort_then_rectify" default="true" />
 
   <node pkg="nodelet" type="nodelet" name="nodelet_manager" args="manager"
       output="screen"/>
 
   <node name="image_pub" pkg="vimjay" type="image.py"
+      if="$(arg use_image)"
       args="$(arg image)"
       output="screen" >
+    <remap from="image" to="$(arg image_topic)" />
     <remap from="camera_info" to="camera_info_unused" />
     <param name="rate" value="10" />
   </node>
@@ -22,22 +29,69 @@
   </node>
 
   <!-- this is for rectifying then distorting -->
-  <group unless="$(arg distort_then_rectify)">
-    <node name="image_proc" pkg="image_proc" type="image_proc"
-        output="screen" >
-      <remap from="image_raw" to="image" />
-      <remap from="camera_info" to="camera_info_unused" />
+  <group ns="undistort" unless="$(arg distort_then_rectify)">
+    <node pkg="nodelet" type="nodelet" name="load_rectify"
+        args="load image_proc/rectify /nodelet_manager"
+        output="screen">
+      <remap from="image_mono" to="$(arg image_topic)" />
+      <remap from="camera_info" to="$(arg camera_info_topic)" />
+      <remap from="image_rect" to="image_rect_color" />
+      <param name="image_transport" value="$(arg image_transport)" />
     </node>
+    <group ns="image_color" >
+      <rosparam param="disable_pub_plugins">
+        - 'image_transport/compressed'
+        - 'image_transport/compressedDepth'
+        - 'image_transport/ffmpeg'
+        - 'image_transport/theora'
+      </rosparam>
+    </group>
 
-    <group ns="redistort" if="true" >
-    <!--node name="distort" pkg="image_manip" type="distort_image"
-      output="screen" -->
-    <node pkg="nodelet" type="nodelet"
-        name="load_distort0" output="screen"
-        args="load image_manip/Distort nodelet_manager" >
-      <remap from="image" to="/image_rect" />
-      <remap from="camera_info" to="/camera_info_unused" />
-    </node>
+    <group ns="image_mono" >
+      <rosparam param="disable_pub_plugins">
+        - 'image_transport/compressed'
+        - 'image_transport/compressedDepth'
+        - 'image_transport/ffmpeg'
+        - 'image_transport/theora'
+      </rosparam>
+    </group>
+
+    <group ns="image_rect" >
+      <rosparam param="disable_pub_plugins">
+        - 'image_transport/compressed'
+        - 'image_transport/compressedDepth'
+        - 'image_transport/ffmpeg'
+        - 'image_transport/theora'
+      </rosparam>
+    </group>
+
+    <group ns="image_rect_color" >
+      <rosparam param="disable_pub_plugins">
+        - 'image_transport/compressed'
+        - 'image_transport/compressedDepth'
+        - 'image_transport/ffmpeg'
+        - 'image_transport/theora'
+      </rosparam>
+    </group>
+
+    <group if="true" >
+      <!--node name="distort" pkg="image_manip" type="distort_image"
+        output="screen" -->
+      <node pkg="nodelet" type="nodelet"
+          name="load_distort0"
+          args="load image_manip/Distort /nodelet_manager"
+          output="screen">
+        <remap from="image" to="image_rect_color" />
+        <remap from="camera_info" to="$(arg camera_info_topic)" />
+      </node>
+      <group ns="distorted/image" >
+        <rosparam param="disable_pub_plugins">
+          - 'image_transport/compressed'
+          - 'image_transport/compressedDepth'
+          - 'image_transport/ffmpeg'
+          - 'image_transport/theora'
+        </rosparam>
+      </group>
     </group>
   </group>  <!-- distort then rectify -->
 
