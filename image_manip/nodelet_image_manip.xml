@@ -34,6 +34,13 @@
       Accumulate images in a buffer and republish an index into them.
     </description>
   </class>
+  <class name="image_manip/Pad"
+      type="image_manip::Pad"
+      base_class_type="nodelet::Nodelet">
+    <description>
+      Embed an image in a larger blank image and alter CameraInfo accordingly
+    </description>
+  </class>
   <class name="image_manip/RotoZoom"
       type="image_manip::RotoZoom"
       base_class_type="nodelet::Nodelet">

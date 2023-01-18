@@ -54,6 +54,7 @@ add_library(${PROJECT_NAME}
   src/iir_image.cpp
   src/image_delay.cpp
   src/image_deque.cpp
+  src/pad.cpp
   src/resize.cpp
   src/rotate90.cpp
   src/roto_zoom.cpp

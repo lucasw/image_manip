@@ -31,14 +31,24 @@
 
   <!-- this is for rectifying then distorting -->
   <group ns="undistort" unless="$(arg distort_then_rectify)">
+    <node pkg="nodelet" type="nodelet" name="pad"
+        args="load image_manip/Pad /nodelet_manager"
+        output="screen">
+      <remap from="image_in" to="$(arg image_topic)" />
+      <remap from="~image_out" to="~image_out" />
+      <remap from="~camera_info_out" to="camera_info" />
+      <param name="image_transport" value="$(arg image_transport)" />
+    </node>
+
     <node pkg="nodelet" type="nodelet" name="load_rectify"
         args="load image_proc/rectify /nodelet_manager"
+        if="true"
         output="screen">
-      <remap from="image_mono" to="$(arg image_topic)" />
+      <remap from="image_mono" to="pad/image_out" />
       <!-- this remapping doesn't work, because of image transport?  Tilde prefix doesn't work also -->
       <!--remap from="~camera_info" to="$(arg camera_info_topic)" /-->
       <remap from="image_rect" to="image_rect_color" />
-      <param name="image_transport" value="$(arg image_transport)" />
+      <!-- param name="image_transport" value="$(arg image_transport)" /-->
     </node>
     <group ns="image_color" >
       <rosparam param="disable_pub_plugins">
@@ -84,7 +94,7 @@
           args="load image_manip/Distort /nodelet_manager"
           output="screen">
         <remap from="image" to="image_rect_color" />
-        <!-- remap from="camera_info" to="$(arg camera_info_topic)" /-->
+        <remap from="camera_info" to="pad/camera_info" />
       </node>
       <group ns="distorted/image" >
         <rosparam param="disable_pub_plugins">
