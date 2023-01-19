@@ -20,13 +20,15 @@
       args="$(arg image)"
       output="screen" >
     <remap from="image" to="$(arg image_topic)" />
-    <remap from="camera_info" to="camera_info_unused" />
+    <remap from="camera_info" to="camera_info" />
+    <remap from="camera_info_in" to="camera_info_pre" />
     <param name="rate" value="10" />
   </node>
 
   <node name="dr_camera_info" pkg="vimjay" type="dr_camera_info.py"
       output="screen"
       if="$(arg use_dr_camera_info)" >
+    <remap from="camera_info" to="camera_info_pre" />
   </node>
 
   <!-- this is for rectifying then distorting -->
@@ -87,8 +89,6 @@
     </group>
 
     <group if="true" >
-      <!--node name="distort" pkg="image_manip" type="distort_image"
-        output="screen" -->
       <node pkg="nodelet" type="nodelet"
           name="load_distort0"
           args="load image_manip/Distort /nodelet_manager"
@@ -110,21 +110,30 @@
   <!-- this is for distorting then rectifying -->
   <group ns="distort" if="$(arg distort_then_rectify)">
 
-    <!-- node name="distort" pkg="image_manip" type="distort_image"
-      output="screen" -->
     <node pkg="nodelet" type="nodelet"
-        name="load_distort1" output="screen"
-        args="load image_manip/Distort /nodelet_manager" >
+        name="load_distort0"
+        args="load image_manip/Distort /nodelet_manager"
+        output="screen">
       <remap from="image" to="/image" />
-      <!-- remap from="camera_info" to="$(arg camera_info_topic)" /-->
-      <param name="use_debug" value="$(arg use_debug)" />
+      <remap from="camera_info" to="/camera_info" />
     </node>
+    <group ns="distorted/image" >
+      <rosparam param="disable_pub_plugins">
+        - 'image_transport/compressed'
+        - 'image_transport/compressedDepth'
+        - 'image_transport/ffmpeg'
+        - 'image_transport/theora'
+      </rosparam>
+    </group>
 
-    <node name="image_proc" pkg="image_proc" type="image_proc"
+    <node pkg="nodelet" type="nodelet" name="load_rectify"
+        args="load image_proc/rectify /nodelet_manager"
         if="true"
-        output="screen" >
-      <remap from="image_raw" to="distorted/image" />
-      <remap from="camera_info" to="distorted/camera_info" />
+        output="screen">
+      <remap from="image_mono" to="distorted/image" />
+      <!-- this remapping doesn't work, because of image transport?  Tilde prefix doesn't work also -->
+      <!--remap from="~camera_info" to="$(arg camera_info_topic)" /-->
+      <remap from="image_rect" to="image_rect" />
     </node>
 
     <!-- visualize the difference between the input and rectified output -
