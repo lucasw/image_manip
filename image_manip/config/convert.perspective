@@ -1,164 +1,55 @@
 {
   "keys": {},
   "groups": {
-    "pluginmanager": {
+    "mainwindow": {
       "keys": {
-        "running-plugins": {
-          "type": "repr",
-          "repr": "{u'rqt_image_view/ImageView': [3, 2, 1], u'rqt_dr_single/dr_single': [1, 2]}"
+        "geometry": {
+          "repr(QByteArray.hex)": "QtCore.QByteArray(b'01d9d0cb0003000000000064000001ba000009cc000006a00000006400000204000009cc000006a000000000000000000f000000006400000204000009cc000006a0')",
+          "type": "repr(QByteArray.hex)",
+          "pretty-print": "     d       d            d      "
+        },
+        "state": {
+          "repr(QByteArray.hex)": "QtCore.QByteArray(b'000000ff00000000fd0000000100000003000009690000044ffc0100000003fb0000004e007200710074005f00640072005f00730069006e0067006c0065005f005f00640072005f00730069006e0067006c0065005f005f0031005f005f0044007200530069006e0067006c00650055006901000000000000029c000001e700fffffffb0000005a007200710074005f0069006d006100670065005f0076006900650077005f005f0049006d0061006700650056006900650077005f005f0031005f005f0049006d006100670065005600690065007700570069006400670065007401000002a8000003560000011100fffffffb0000005a007200710074005f0069006d006100670065005f0076006900650077005f005f0049006d0061006700650056006900650077005f005f0032005f005f0049006d0061006700650056006900650077005700690064006700650074010000060a0000035f0000013b00ffffff000009690000000000000004000000040000000800000008fc00000001000000030000000100000036004d0069006e0069006d0069007a006500640044006f0063006b00570069006400670065007400730054006f006f006c0062006100720000000000ffffffff0000000000000000')",
+          "type": "repr(QByteArray.hex)",
+          "pretty-print": "                 Nrqt_dr_single__dr_single__1__DrSingleUi          Zrqt_image_view__ImageView__1__ImageViewWidget          Zrqt_image_view__ImageView__2__ImageViewWidget                            6MinimizedDockWidgetsToolbar        "
         }
       },
       "groups": {
-        "plugin__rqt_image_view__ImageView__3": {
-          "keys": {},
-          "groups": {
-            "dock_widget__ImageViewWidget": {
-              "keys": {
-                "dockable": {
-                  "type": "repr",
-                  "repr": "True"
-                },
-                "parent": {
-                  "type": "repr",
-                  "repr": "None"
-                },
-                "dock_widget_title": {
-                  "type": "repr",
-                  "repr": "u'Image View (3)'"
-                }
-              },
-              "groups": {}
-            },
-            "plugin": {
-              "keys": {
-                "max_range": {
-                  "type": "repr",
-                  "repr": "10.0"
-                },
-                "rotate": {
-                  "type": "repr",
-                  "repr": "0"
-                },
-                "smooth_image": {
-                  "type": "repr",
-                  "repr": "False"
-                },
-                "mouse_pub_topic": {
-                  "type": "repr",
-                  "repr": "u'/image_manip/converted2_mouse_left'"
-                },
-                "num_gridlines": {
-                  "type": "repr",
-                  "repr": "0"
-                },
-                "toolbar_hidden": {
-                  "type": "repr",
-                  "repr": "False"
-                },
-                "zoom1": {
-                  "type": "repr",
-                  "repr": "False"
-                },
-                "dynamic_range": {
-                  "type": "repr",
-                  "repr": "False"
-                },
-                "topic": {
-                  "type": "repr",
-                  "repr": "u'/image_manip/converted2'"
-                },
-                "publish_click_location": {
-                  "type": "repr",
-                  "repr": "False"
-                }
-              },
-              "groups": {}
+        "toolbar_areas": {
+          "keys": {
+            "MinimizedDockWidgetsToolbar": {
+              "repr": "8",
+              "type": "repr"
             }
-          }
-        },
-        "plugin__rqt_image_view__ImageView__2": {
-          "keys": {},
-          "groups": {
-            "dock_widget__ImageViewWidget": {
-              "keys": {
-                "dockable": {
-                  "type": "repr",
-                  "repr": "True"
-                },
-                "parent": {
-                  "type": "repr",
-                  "repr": "None"
-                },
-                "dock_widget_title": {
-                  "type": "repr",
-                  "repr": "u'Image View (2)'"
-                }
-              },
-              "groups": {}
-            },
-            "plugin": {
-              "keys": {
-                "max_range": {
-                  "type": "repr",
-                  "repr": "10.0"
-                },
-                "rotate": {
-                  "type": "repr",
-                  "repr": "0"
-                },
-                "smooth_image": {
-                  "type": "repr",
-                  "repr": "False"
-                },
-                "mouse_pub_topic": {
-                  "type": "repr",
-                  "repr": "u'/image_manip/converted_mouse_left'"
-                },
-                "num_gridlines": {
-                  "type": "repr",
-                  "repr": "0"
-                },
-                "toolbar_hidden": {
-                  "type": "repr",
-                  "repr": "False"
-                },
-                "zoom1": {
-                  "type": "repr",
-                  "repr": "False"
-                },
-                "dynamic_range": {
-                  "type": "repr",
-                  "repr": "False"
-                },
-                "topic": {
-                  "type": "repr",
-                  "repr": "u'/image_manip/converted'"
-                },
-                "publish_click_location": {
-                  "type": "repr",
-                  "repr": "False"
-                }
-              },
-              "groups": {}
-            }
-          }
-        },
+          },
+          "groups": {}
+        }
+      }
+    },
+    "pluginmanager": {
+      "keys": {
+        "running-plugins": {
+          "repr": "{'rqt_dr_single/dr_single': [1], 'rqt_image_view/ImageView': [1, 2]}",
+          "type": "repr"
+        }
+      },
+      "groups": {
         "plugin__rqt_dr_single__dr_single__1": {
           "keys": {},
           "groups": {
             "dock_widget__DrSingleUi": {
               "keys": {
+                "dock_widget_title": {
+                  "repr": "'Dynamic Reconfigure Single'",
+                  "type": "repr"
+                },
                 "dockable": {
-                  "type": "repr",
-                  "repr": "True"
+                  "repr": "True",
+                  "type": "repr"
                 },
                 "parent": {
-                  "type": "repr",
-                  "repr": "None"
-                },
-                "dock_widget_title": {
-                  "type": "repr",
-                  "repr": "u'Dynamic Reconfigure Single'"
+                  "repr": "None",
+                  "type": "repr"
                 }
               },
               "groups": {}
@@ -166,47 +57,12 @@
             "plugin": {
               "keys": {
                 "hide_dropdown": {
-                  "type": "repr",
-                  "repr": "False"
+                  "repr": "False",
+                  "type": "repr"
                 },
                 "server_name": {
-                  "type": "repr",
-                  "repr": "u'/image_manip/convert0'"
-                }
-              },
-              "groups": {}
-            }
-          }
-        },
-        "plugin__rqt_dr_single__dr_single__2": {
-          "keys": {},
-          "groups": {
-            "dock_widget__DrSingleUi": {
-              "keys": {
-                "dockable": {
-                  "type": "repr",
-                  "repr": "True"
-                },
-                "parent": {
-                  "type": "repr",
-                  "repr": "None"
-                },
-                "dock_widget_title": {
-                  "type": "repr",
-                  "repr": "u'Dynamic Reconfigure Single (2)'"
-                }
-              },
-              "groups": {}
-            },
-            "plugin": {
-              "keys": {
-                "hide_dropdown": {
-                  "type": "repr",
-                  "repr": "False"
-                },
-                "server_name": {
-                  "type": "repr",
-                  "repr": "u'/image_manip/convert1'"
+                  "repr": "'/image_manip/convert0'",
+                  "type": "repr"
                 }
               },
               "groups": {}
@@ -218,92 +74,142 @@
           "groups": {
             "dock_widget__ImageViewWidget": {
               "keys": {
+                "dock_widget_title": {
+                  "repr": "'Image View'",
+                  "type": "repr"
+                },
                 "dockable": {
-                  "type": "repr",
-                  "repr": "True"
+                  "repr": "True",
+                  "type": "repr"
                 },
                 "parent": {
-                  "type": "repr",
-                  "repr": "None"
-                },
-                "dock_widget_title": {
-                  "type": "repr",
-                  "repr": "u'Image View'"
+                  "repr": "None",
+                  "type": "repr"
                 }
               },
               "groups": {}
             },
             "plugin": {
               "keys": {
-                "max_range": {
-                  "type": "repr",
-                  "repr": "10.0"
-                },
-                "rotate": {
-                  "type": "repr",
-                  "repr": "0"
-                },
-                "smooth_image": {
-                  "type": "repr",
-                  "repr": "False"
-                },
-                "mouse_pub_topic": {
-                  "type": "repr",
-                  "repr": "u'/image_manip/image_source/image_raw_mouse_left'"
-                },
-                "num_gridlines": {
-                  "type": "repr",
-                  "repr": "0"
-                },
-                "toolbar_hidden": {
-                  "type": "repr",
-                  "repr": "False"
-                },
-                "zoom1": {
-                  "type": "repr",
-                  "repr": "False"
+                "color_scheme": {
+                  "repr": "3",
+                  "type": "repr"
                 },
                 "dynamic_range": {
-                  "type": "repr",
-                  "repr": "False"
+                  "repr": "False",
+                  "type": "repr"
                 },
-                "topic": {
-                  "type": "repr",
-                  "repr": "u'/image_manip/image_source/image_raw'"
+                "max_range": {
+                  "repr": "10.0",
+                  "type": "repr"
+                },
+                "mouse_pub_topic": {
+                  "repr": "'/image_manip/image_source/image_raw_mouse_left'",
+                  "type": "repr"
+                },
+                "num_gridlines": {
+                  "repr": "0",
+                  "type": "repr"
                 },
                 "publish_click_location": {
-                  "type": "repr",
-                  "repr": "False"
+                  "repr": "False",
+                  "type": "repr"
+                },
+                "rotate": {
+                  "repr": "0",
+                  "type": "repr"
+                },
+                "smooth_image": {
+                  "repr": "False",
+                  "type": "repr"
+                },
+                "toolbar_hidden": {
+                  "repr": "False",
+                  "type": "repr"
+                },
+                "topic": {
+                  "repr": "'/image_manip/image_source/image_raw'",
+                  "type": "repr"
+                },
+                "zoom1": {
+                  "repr": "False",
+                  "type": "repr"
                 }
               },
               "groups": {}
             }
           }
-        }
-      }
-    },
-    "mainwindow": {
-      "keys": {
-        "geometry": {
-          "type": "repr(QByteArray.hex)",
-          "repr(QByteArray.hex)": "QtCore.QByteArray('01d9d0cb000200000000002f00000032000005f4000002e60000002f0000005c000005f4000002e600000000000000000780')",
-          "pretty-print": "     / 2     / \\         "
         },
-        "state": {
-          "type": "repr(QByteArray.hex)",
-          "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff00000000fd0000000100000003000005c60000025ffc0100000004fc000000000000014c0000014c00fffffffc0200000002fb0000004e007200710074005f00640072005f00730069006e0067006c0065005f005f00640072005f00730069006e0067006c0065005f005f0031005f005f0044007200530069006e0067006c0065005500690100000016000001270000008000fffffffb0000004e007200710074005f00640072005f00730069006e0067006c0065005f005f00640072005f00730069006e0067006c0065005f005f0032005f005f0044007200530069006e0067006c0065005500690100000143000001320000008000fffffffb0000005a007200710074005f0069006d006100670065005f0076006900650077005f005f0049006d0061006700650056006900650077005f005f0031005f005f0049006d0061006700650056006900650077005700690064006700650074010000015200000179000000c700fffffffb0000005a007200710074005f0069006d006100670065005f0076006900650077005f005f0049006d0061006700650056006900650077005f005f0032005f005f0049006d006100670065005600690065007700570069006400670065007401000002d100000177000000dd00fffffffb0000005a007200710074005f0069006d006100670065005f0076006900650077005f005f0049006d0061006700650056006900650077005f005f0033005f005f0049006d0061006700650056006900650077005700690064006700650074010000044e00000178000000dd00ffffff000005c60000000000000004000000040000000800000008fc00000001000000030000000100000036004d0069006e0069006d0069007a006500640044006f0063006b00570069006400670065007400730054006f006f006c0062006100720000000000ffffffff0000000000000000')",
-          "pretty-print": "                   L L                                                  '                                               C 2                                                     R y                                                       w                                                     N x                                                            "
-        }
-      },
-      "groups": {
-        "toolbar_areas": {
-          "keys": {
-            "MinimizedDockWidgetsToolbar": {
-              "type": "repr",
-              "repr": "8"
+        "plugin__rqt_image_view__ImageView__2": {
+          "keys": {},
+          "groups": {
+            "dock_widget__ImageViewWidget": {
+              "keys": {
+                "dock_widget_title": {
+                  "repr": "'Image View (2)'",
+                  "type": "repr"
+                },
+                "dockable": {
+                  "repr": "True",
+                  "type": "repr"
+                },
+                "parent": {
+                  "repr": "None",
+                  "type": "repr"
+                }
+              },
+              "groups": {}
+            },
+            "plugin": {
+              "keys": {
+                "color_scheme": {
+                  "repr": "3",
+                  "type": "repr"
+                },
+                "dynamic_range": {
+                  "repr": "False",
+                  "type": "repr"
+                },
+                "max_range": {
+                  "repr": "10.0",
+                  "type": "repr"
+                },
+                "mouse_pub_topic": {
+                  "repr": "'/image_manip/converted_mouse_left'",
+                  "type": "repr"
+                },
+                "num_gridlines": {
+                  "repr": "0",
+                  "type": "repr"
+                },
+                "publish_click_location": {
+                  "repr": "False",
+                  "type": "repr"
+                },
+                "rotate": {
+                  "repr": "0",
+                  "type": "repr"
+                },
+                "smooth_image": {
+                  "repr": "False",
+                  "type": "repr"
+                },
+                "toolbar_hidden": {
+                  "repr": "False",
+                  "type": "repr"
+                },
+                "topic": {
+                  "repr": "'/image_manip/converted'",
+                  "type": "repr"
+                },
+                "zoom1": {
+                  "repr": "False",
+                  "type": "repr"
+                }
+              },
+              "groups": {}
             }
-          },
-          "groups": {}
+          }
         }
       }
     }
