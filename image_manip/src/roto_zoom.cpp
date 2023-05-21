@@ -73,7 +73,7 @@ void RotoZoom::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
   if (config_.frame_rate == 0)
   {
-    updateImage(msg, background_image_);
+    updateImage(msg, background_image_, msg->header.stamp);
     return;
   }
 
@@ -122,11 +122,13 @@ void RotoZoom::update(const ros::TimerEvent& e)
   }
 
   const sensor_msgs::ImageConstPtr msg = images_[0];
-  updateImage(msg, background_image);
+  updateImage(msg, background_image,
+      ros::Time::now());  // or reception time of original message?
 }
 
 void RotoZoom::updateImage(const sensor_msgs::ImageConstPtr& msg,
-    sensor_msgs::ImageConstPtr& background_image)
+    sensor_msgs::ImageConstPtr& background_image,
+    const ros::Time stamp)
 {
   cv_bridge::CvImageConstPtr cv_ptr;
   if (!imageToMat(msg, cv_ptr))
@@ -243,7 +245,7 @@ void RotoZoom::updateImage(const sensor_msgs::ImageConstPtr& msg,
                       dst_size,
                       cv::INTER_NEAREST, config_.border);
 
-  output_image->header.stamp = ros::Time::now();  // or reception time of original message?
+  output_image->header.stamp = stamp;
   output_image->header.frame_id = msg->header.frame_id;
 
   output_image_info_.height = output_image->height;
