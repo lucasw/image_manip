@@ -41,13 +41,16 @@ void updateTimer(ros::Timer& timer, const float frame_rate,
   if (frame_rate == old_frame_rate)
     return;
 
+  ROS_INFO_STREAM_THROTTLE(1.0, frame_rate << ", was " << old_frame_rate);
   if (frame_rate <= 0)
   {
+    ROS_WARN_STREAM("stopping timer");
     timer.stop();
     return;
   }
   else if ((frame_rate > 0) && (old_frame_rate <= 0))
   {
+    ROS_WARN_STREAM("starting timer");
     timer.start();
   }
 

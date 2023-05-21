@@ -73,6 +73,8 @@ class RotoZoom : public nodelet::Nodelet
   bool dirty_;
   ros::Timer timer_;
   void update(const ros::TimerEvent& e);
+  void updateImage(const sensor_msgs::ImageConstPtr& msg,
+    sensor_msgs::ImageConstPtr& background_image);
 
 public:
   virtual void onInit();

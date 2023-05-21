@@ -57,26 +57,31 @@ void RotoZoom::callback(
   config_ = config;
   dirty_ = true;
 
+  // TODO(lucasw) this is convenient for manipulating a paused image
+  // but will mess up downstream subscribers that want to sync with a
+  // camera_info, add another enable for this
+#if 0
   if (config_.frame_rate == 0)
   {
     ros::TimerEvent e;
     update(e);
   }
+#endif
 }
 
 void RotoZoom::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
+  if (config_.frame_rate == 0)
+  {
+    updateImage(msg, background_image_);
+    return;
+  }
+
   // need mutex around image_ uses
   images_.push_back(msg);
   while (images_.size() > 1)
     images_.pop_front();
   dirty_ = true;
-
-  if (config_.frame_rate == 0)
-  {
-    ros::TimerEvent e;
-    update(e);
-  }
 }
 
 void RotoZoom::backgroundImageCallback(const sensor_msgs::ImageConstPtr& msg)
@@ -87,11 +92,14 @@ void RotoZoom::backgroundImageCallback(const sensor_msgs::ImageConstPtr& msg)
   background_image_ = msg;
   dirty_ = true;
 
+#if 0
+  // TODO(lucasw) this is broken currently and need separate enable
   if (config_.frame_rate == 0)
   {
     ros::TimerEvent e;
     update(e);
   }
+#endif
 }
 
 void RotoZoom::update(const ros::TimerEvent& e)
@@ -114,6 +122,12 @@ void RotoZoom::update(const ros::TimerEvent& e)
   }
 
   const sensor_msgs::ImageConstPtr msg = images_[0];
+  updateImage(msg, background_image);
+}
+
+void RotoZoom::updateImage(const sensor_msgs::ImageConstPtr& msg,
+    sensor_msgs::ImageConstPtr& background_image)
+{
   cv_bridge::CvImageConstPtr cv_ptr;
   if (!imageToMat(msg, cv_ptr))
     return;
@@ -127,13 +141,19 @@ void RotoZoom::update(const ros::TimerEvent& e)
     return;
   }
 
+  if (background_image == nullptr) {
+    background_image = msg;
+  }
+#if 0
   float bg_wd = wd;
   float bg_ht = ht;
-  if (background_image)
+  ROS_INFO_STREAM(background_image << " " << bg_wd << " x " << bg_ht);
+  if (background_image != nullptr)
   {
     bg_wd = background_image->width;
     bg_ht = background_image->height;
   }
+#endif
 
   float phi = config_.phi;
   float theta = config_.theta;
@@ -199,9 +219,18 @@ void RotoZoom::update(const ros::TimerEvent& e)
     }
     else
     {
+      ROS_ERROR_STREAM_THROTTLE(2.0, "need background image currently");
+      return;
+#if 0
+      ROS_INFO_STREAM("copy output");
       // TODO(lucasw) what is copied here
       *output_image = output_image_info_;
+      // TODO(lucasw) there may not be any initial values for these so set them here
+      // output_image_info_.step = TBD
+      // output_image_info_.data.resize(TBD);
       // TODO(lucasw) zero out data
+      ROS_INFO_STREAM("copied output");
+#endif
     }
   }
 
@@ -268,10 +297,16 @@ void RotoZoom::onInit()
   background_sub_ = getNodeHandle().subscribe("background_image", 5,
       &RotoZoom::backgroundImageCallback, this);
 
-  timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0),
-    &RotoZoom::update, this);
-  // force timer start by making old frame_rate different
+  timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0), &RotoZoom::update, this);
+  if (config_.frame_rate > 0.0) {
+    ROS_INFO_STREAM("starting timer " << config_.frame_rate);
+    timer_.start();
+  }
+#if 0
+  timer_.stop();
+  ROS_INFO_STREAM("force timer restart by making old frame_rate different " << config_.frame_rate);
   updateTimer(timer_, config_.frame_rate, config_.frame_rate - 1.0);
+#endif
 }
 
 };  // namespace image_manip
