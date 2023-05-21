@@ -6,6 +6,8 @@
   <arg name="frame_rate" default="10"/>
   <arg name="use_rqt" default="true"/>
 
+  <arg name="use_image" default="true"/>
+
   <node name="nodelet_manager" pkg="nodelet" type="nodelet"
         args="manager" output="screen"
         ns="image_source" >
@@ -13,6 +15,7 @@
     <param name="publish_rate" value="0.5"/>
   </node>
 
+  <group if="$(arg use_image)">
   <node pkg="nodelet" type="nodelet"
     name="image_source"
     args="load image_publisher/image_publisher image_source/nodelet_manager">
@@ -35,10 +38,12 @@
     <rosparam param="disable_pub_plugins">
       - 'image_transport/compressed'
       - 'image_transport/compressedDepth'
+      - 'image_transport/ffmpeg'
       - 'image_transport/theora'
     </rosparam>
     </group>
   </group>
+  </group>  <!-- use_image -->
 
   <group ns="image_source">
     <group ns="image_raw">
@@ -46,6 +51,7 @@
     <rosparam param="disable_pub_plugins">
       - 'image_transport/compressed'
       - 'image_transport/compressedDepth'
+      - 'image_transport/ffmpeg'
       - 'image_transport/theora'
     </rosparam>
     </group>
