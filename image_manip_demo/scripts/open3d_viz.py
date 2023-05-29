@@ -12,11 +12,12 @@ import rospy
 from cv_bridge import CvBridge
 from sensor_msgs.msg import (
     CameraInfo,
+    CompressedImage,
     Image,
 )
 
 
-def depth_to_pcd(depth_np: np.ndarray, camera_info: CameraInfo, roi_x=0, roi_y=0):
+def depth_color_to_pcd(depth_np: np.ndarray, color_np: np.ndarray, camera_info: CameraInfo, roi_x=0, roi_y=0):
     K = camera_info.K
     fx = K[0]
     fy = K[4]
@@ -27,12 +28,16 @@ def depth_to_pcd(depth_np: np.ndarray, camera_info: CameraInfo, roi_x=0, roi_y=0
     height = depth_np.shape[0]
     roi_cx = cx - roi_x
     roi_cy = cy - roi_y
-    o3d_intrinsic = o3d.camera.PinholeCameraIntrinsic(width, height, fx, fy, roi_cx, roi_cy)
-    o3d_image = o3d.geometry.Image(depth_np)
-    text = f"focal: {o3d_intrinsic.get_focal_length()}, principal {o3d_intrinsic.get_principal_point()}"
-    text += f" {depth_np.shape} {roi_x} {roi_y}"
-    rospy.loginfo_throttle(0.0, text)
-    pcd = o3d.geometry.PointCloud.create_from_depth_image(o3d_image, o3d_intrinsic, depth_scale=1.0)
+    intrinsic_o3d = o3d.camera.PinholeCameraIntrinsic(width, height, fx, fy, roi_cx, roi_cy)
+    depth_o3d = o3d.geometry.Image(depth_np)
+    color_o3d = o3d.geometry.Image(color_np)
+    rgbd_o3d = o3d.geometry.RGBDImage.create_from_color_and_depth(color_o3d, depth_o3d,
+                                                                  convert_rgb_to_intensity=False)
+    text = f"focal: {intrinsic_o3d.get_focal_length()}, principal {intrinsic_o3d.get_principal_point()}"
+    text += f" {depth_np.shape} {roi_x} {roi_y}, {rgbd_o3d}"
+    rospy.logdebug_throttle(0.0, text)
+    rospy.loginfo(rgbd_o3d)
+    pcd = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd_o3d, intrinsic_o3d)  # , depth_scale=1.0)
     return pcd
 
 
@@ -52,16 +57,32 @@ class Open3DViz:
         self.roi_y = 100
         self.roi_h = 500
 
+        use_compressed_image = rospy.get_param("~compressed_image", True)
+
         camera_info_sub = message_filters.Subscriber("camera_info", CameraInfo)
+        # TODO(lucasw) support compressedDepth
         depth_sub = message_filters.Subscriber("depth/image", Image)
-        subs = [depth_sub, camera_info_sub]
+        # make this optional
+        if use_compressed_image:
+            color_sub = message_filters.Subscriber("image/compressed", CompressedImage)
+            callback = self.compressed_callback
+        else:
+            color_sub = message_filters.Subscriber("image", Image)
+            callback = self.callback
+        subs = [depth_sub, color_sub, camera_info_sub]
         # self._ets = message_filters.TimeSynchronizer(subs, queue_size=15)
         self.ets = message_filters.ApproximateTimeSynchronizer(subs, queue_size=15, slop=0.1)
-        self.ets.registerCallback(self.callback)
+        self.ets_used = False
+        self.ets.registerCallback(callback)
 
+        self.t0 = rospy.Time.now()
         self.timer = rospy.Timer(rospy.Duration(0.1), self.update, reset=True)
 
     def update(self, event: rospy.timer.TimerEvent):
+        if not self.ets_used and (event.current_real - self.t0).to_sec() > 2.0:
+            rospy.logwarn_once("no sync callbacks yet, topics probably aren't in sync or aren't getting published")
+            return
+
         if self.viz is None:
             self.viz = o3d.visualization.Visualizer()
             # this only updates once
@@ -88,10 +109,11 @@ class Open3DViz:
                     self.viz.remove_geometry(pcd)
 
             for ind, pcd in enumerate(new_pcd):
-                if ind > 0:
-                    pcd.paint_uniform_color([0.5, 0.206, 0.8])
-                else:
-                    pcd.paint_uniform_color([0.1, 0.306, 0.1])
+                # if ind > 0:
+                #     pcd.paint_uniform_color([0.5, 0.206, 0.8])
+                # else:
+                #     pcd.paint_uniform_color([0.1, 0.306, 0.1])
+                # TODO(lucasw) draw boudning boxes around each point cloud
                 self.viz.add_geometry(pcd)
 
             if view_param is not None:
@@ -108,9 +130,20 @@ class Open3DViz:
         self.viz.poll_events()
         self.viz.update_renderer()
 
-    def callback(self, depth_image: Image, camera_info: CameraInfo):
+    def compressed_callback(self, depth_image: Image, compressed_color_image: CompressedImage,
+                            camera_info: CameraInfo):
+        encoding = "bgr8"
+        color_np = self.cv_bridge.compressed_imgmsg_to_cv2(compressed_color_image, encoding)
+        self.process(depth_image, color_np, camera_info)
 
+    def callback(self, depth_image: Image, color_image: Image, camera_info: CameraInfo):
+        color_np = self.cv_bridge.imgmsg_to_cv2(depth_image, depth_image.encoding)
+        self.process(depth_image, color_np, camera_info)
+
+    def process(self, depth_image: Image, color_np: np.ndarray, camera_info: CameraInfo):
+        self.ets_used = True
         t0 = rospy.Time.now()
+        depth_np = self.cv_bridge.imgmsg_to_cv2(depth_image, depth_image.encoding)
 
         x0 = self.roi_x
         y0 = self.roi_y
@@ -125,14 +158,14 @@ class Open3DViz:
         else:
             y1 = y0 + self.roi_h
 
-        depth_np = self.cv_bridge.imgmsg_to_cv2(depth_image, depth_image.encoding)
-
         roi_depth_np = depth_np[y0:y1, x0:x1].copy()
-        roi_pcd = depth_to_pcd(roi_depth_np, camera_info, roi_x=x0, roi_y=y0)
+        roi_color_np = color_np[y0:y1, x0:x1, :].copy()
+        print(f"{depth_np.shape}, {color_np.shape}, {roi_depth_np.shape} {roi_color_np.shape}")
+        roi_pcd = depth_color_to_pcd(roi_depth_np, roi_color_np, camera_info, roi_x=x0, roi_y=y0)
 
         depth_np[y0:y1, x0:x1] = np.nan
 
-        pcd = depth_to_pcd(depth_np, camera_info)
+        pcd = depth_color_to_pcd(depth_np, color_np, camera_info)
 
         # rospy.loginfo_throttle(2.0, f"{x0} {x1}, {y0} {y1}")
 
