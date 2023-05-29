@@ -37,7 +37,12 @@ class Open3DViz:
     def update(self, event: rospy.timer.TimerEvent):
         if self.viz is None:
             self.viz = o3d.visualization.Visualizer()
+            # this only updates once
+            # self.viz = o3d.visualization.VisualizerWithEditing()
             self.viz.create_window()
+            self.view_control = self.viz.get_view_control()
+            # self.view_control.change_field_of_view(10)
+            # rospy.loginfo(self.view_control.get_field_of_view())
 
         with self.lock:
             new_pcd = self.new_pcd
@@ -45,9 +50,24 @@ class Open3DViz:
 
         if new_pcd is not None:
             if self.old_pcd is not None:
+                # https://github.com/isl-org/Open3D/issues/4306
+                # https://github.com/isl-org/Open3D/issues/2264#issuecomment-1410327023
+                view_param = self.view_control.convert_to_pinhole_camera_parameters()
+
+            if self.old_pcd is not None:
                 self.viz.remove_geometry(self.old_pcd)
 
             self.viz.add_geometry(new_pcd)
+
+            if self.old_pcd is not None:
+                self.view_control.convert_from_pinhole_camera_parameters(view_param)
+            else:
+                # the get fov is degrees, but not clear what change_field_of_view units are
+                # degrees / 5.0 ??
+                rospy.loginfo(self.view_control.get_field_of_view())
+                self.view_control.change_field_of_view(-2.0)
+                rospy.loginfo(self.view_control.get_field_of_view())
+
             self.old_pcd = new_pcd
 
         self.viz.poll_events()
@@ -72,7 +92,7 @@ class Open3DViz:
                                                               depth_scale=1.0)
 
         t1 = rospy.Time.now()
-        rospy.loginfo(f"open3d processing time {(t1 - t0).to_sec()}s")
+        rospy.loginfo_throttle(2.0, f"open3d processing time {(t1 - t0).to_sec()}s")
         # o3d.visualization.draw_geometries([pcd])
         with self.lock:
             self.new_pcd = pcd
