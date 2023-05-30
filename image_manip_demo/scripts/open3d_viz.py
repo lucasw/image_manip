@@ -130,7 +130,7 @@ class Open3DViz:
             # new_geometry.append(roi_pcd)
             # new_geometry.append(roi_pcd.get_axis_aligned_bounding_box())
             # TODO(lucasw) distance_threshold units are off or my point cloud is scaled wrong?
-            plane_model, inliers = roi_pcd.segment_plane(distance_threshold=0.00002,
+            plane_model, inliers = roi_pcd.segment_plane(distance_threshold=0.007,
                                                          ransac_n=3,
                                                          num_iterations=1000)
             # [a, b, c, d] = plane_model

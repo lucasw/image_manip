@@ -78,17 +78,28 @@ def adjust_intrinsic_roi(intrinsic: o3d.camera.PinholeCameraIntrinsic, width: in
     return roi_intrinsic
 
 
-def depth_color_to_pcd(depth_np: np.ndarray, color_np: np.ndarray, camera_info: CameraInfo, roi_x=0, roi_y=0):
+def depth_color_to_pcd(depth_np: np.ndarray, color_np: np.ndarray, camera_info: CameraInfo,
+                       roi_x=0, roi_y=0,
+                       depth_scale=1.0):
     height = depth_np.shape[0]
     width = depth_np.shape[1]
     if width == 0 or height == 0:
         return None
     intrinsic = camera_to_intrinsic(camera_info)
     intrinsic = adjust_intrinsic_roi(intrinsic, width, height, roi_x, roi_y)
+
+    # TODO(lucasw) Image and/or create point cloud function doesn't use array views properly
+    if color_np.base is not None:
+        # TODO(lucasw) warn the caller?
+        color_np = color_np.copy()
+    if depth_np.base is not None:
+        depth_np = depth_np.copy()
+
     depth_o3d = o3d.geometry.Image(depth_np)
     color_o3d = o3d.geometry.Image(color_np)
     rgbd_o3d = o3d.geometry.RGBDImage.create_from_color_and_depth(color_o3d, depth_o3d,
-                                                                  convert_rgb_to_intensity=False)
+                                                                  convert_rgb_to_intensity=False,
+                                                                  depth_scale=depth_scale)
     text = f"focal: {intrinsic.get_focal_length()}, principal {intrinsic.get_principal_point()}"
     text += f" {depth_np.shape} {roi_x} {roi_y}, {rgbd_o3d}"
     rospy.logdebug_throttle(0.0, text)
@@ -97,7 +108,8 @@ def depth_color_to_pcd(depth_np: np.ndarray, color_np: np.ndarray, camera_info: 
 
 
 class DepthColorInfoSub:
-    def __init__(self, main_callback, use_compressed_color=True, use_compressed_depth=True):
+    def __init__(self, main_callback, use_compressed_color=True, use_compressed_depth=True,
+                 additional_subcribers=[]):
         """
         Example usage in another class, init_node already run:
         use_compressed_color = rospy.get_param("~compressed_color", True)
