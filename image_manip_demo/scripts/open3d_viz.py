@@ -32,8 +32,8 @@ class Open3DViz:
         # TODO(lucasw) use dynamic reconfigure or at least rosparams
         self.roi_x = 200
         self.roi_w = 300
-        self.roi_y = 100
-        self.roi_h = 500
+        self.roi_y = 300
+        self.roi_h = 400
 
         use_compressed_color = rospy.get_param("~compressed_color", True)
         use_compressed_depth = rospy.get_param("~compressed_depth", True)
@@ -127,8 +127,17 @@ class Open3DViz:
         # rospy.loginfo(f"{depth_np.shape}, {color_np.shape}, {roi_depth_np.shape} {roi_color_np.shape}")
         roi_pcd = depth_color_to_pcd(roi_depth_np, roi_color_np, camera_info, roi_x=x0, roi_y=y0)
         if roi_pcd is not None:
-            new_geometry.append(roi_pcd)
-            new_geometry.append(roi_pcd.get_axis_aligned_bounding_box())
+            # new_geometry.append(roi_pcd)
+            # new_geometry.append(roi_pcd.get_axis_aligned_bounding_box())
+            # TODO(lucasw) distance_threshold units are off or my point cloud is scaled wrong?
+            plane_model, inliers = roi_pcd.segment_plane(distance_threshold=0.00002,
+                                                         ransac_n=3,
+                                                         num_iterations=1000)
+            # [a, b, c, d] = plane_model
+            text = f"plane model: {plane_model}, {len(inliers)} inliers / {len(roi_pcd.points)}"
+            rospy.loginfo_throttle(1.0, text)
+            inlier_cloud = roi_pcd.select_by_index(inliers)
+            new_geometry.append(inlier_cloud.get_oriented_bounding_box())
 
         depth_np[y0:y1, x0:x1] = np.nan
 
@@ -136,10 +145,13 @@ class Open3DViz:
         if pcd is not None:
             new_geometry.append(pcd)
 
-        intrinsic = camera_to_intrinsic(camera_info)
-        extrinsic = np.zeros((4, 4))
-        camera_lines = o3d.geometry.LineSet.create_camera_visualization(intrinsic, extrinsic)
-        new_geometry.append(camera_lines)
+        draw_camera_info = False
+        if draw_camera_info:
+            intrinsic = camera_to_intrinsic(camera_info)
+            extrinsic = np.zeros((4, 4))
+            camera_lines = o3d.geometry.LineSet.create_camera_visualization(intrinsic, extrinsic)
+            # print(camera_lines.colors)
+            new_geometry.append(camera_lines)
 
         # rospy.loginfo_throttle(2.0, f"{x0} {x1}, {y0} {y1}")
 
