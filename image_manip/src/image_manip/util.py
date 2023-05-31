@@ -180,7 +180,7 @@ class DepthColorInfoSub:
         self.process(depth_np, color_np, camera_info)
 
     def uncompressed_callback(self, depth_image: Image, color_image: Image,
-                 camera_info: CameraInfo):
+                              camera_info: CameraInfo):
         depth_np = self.cv_bridge.imgmsg_to_cv2(depth_image, depth_image.encoding)
         encoding = "bgr8"
         color_np = self.cv_bridge.imgmsg_to_cv2(color_image, encoding)
