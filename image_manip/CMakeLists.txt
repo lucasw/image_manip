@@ -73,6 +73,7 @@ endif()
 catkin_install_python(PROGRAMS
   scripts/animated_gif.py
   scripts/image_folder_publisher.py
+  scripts/zenoh_image_folder_publisher.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
