@@ -100,6 +100,9 @@ target_link_libraries(resize_node ${catkin_LIBRARIES})
 add_executable(roto_zoom_node src/roto_zoom_node.cpp)
 target_link_libraries(roto_zoom_node ${catkin_LIBRARIES})
 
+add_executable(image_folder_publisher src/image_folder_publisher_node.cpp)
+target_link_libraries(image_folder_publisher ${catkin_LIBRARIES})
+
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h"
@@ -110,6 +113,7 @@ install(TARGETS
   iir_image_node
   image_delay_node
   image_deque_node
+  image_folder_publisher
   ${PROJECT_NAME}
   resize_node
   # rotate90_node
