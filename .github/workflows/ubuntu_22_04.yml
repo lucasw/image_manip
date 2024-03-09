@@ -20,6 +20,13 @@ jobs:
         with:
           path: catkin_ws/src/image_manip
 
+      - name: git clone roslint
+        uses: actions/checkout@v4
+        with:
+          repository: lucasw/roslint
+          path: catkin_ws/src/roslint
+          ref: roslint_rust
+
       - name: install python
         run: |
           sudo apt install -yqq python-is-python3 python3-catkin python3-catkin-pkg
