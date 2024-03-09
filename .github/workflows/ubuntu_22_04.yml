@@ -1,4 +1,4 @@
-name: Ubuntu 22.04 Noetic
+name: Ubuntu 22.04 One/Debian
 
 # on: [push]
 on:
