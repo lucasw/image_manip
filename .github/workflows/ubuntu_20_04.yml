@@ -47,15 +47,15 @@ jobs:
           source /opt/ros/$ROS_DISTRO/setup.bash
           mkdir -p ~/catkin_ws/src
           cd ~/catkin_ws
-          catkin build
+          catkin build --no-status
           source devel/setup.bash
           cd ~/catkin_ws/src
           ln -s ~/work  # $CI_SOURCE_PATH
           # echo "::warning $CI_SOURCE_PATH"
           # echo "::warning `ls -l`"
           cd ..
-          catkin build
+          catkin build --no-status
       - name: lint
         run: |
           cd ~/catkin_ws
-          catkin build image_manip --no-deps --catkin-make-args roslint
+          catkin build image_manip --no-status --no-deps --catkin-make-args roslint
