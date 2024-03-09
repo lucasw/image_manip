@@ -1,5 +1,8 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.16)
 project(image_manip VERSION 0.0.1)
+
+# TODO(lucasw) remove this once 20.04 is no longer supported
+set(CMAKE_CXX_STANDARD 17)
 
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
