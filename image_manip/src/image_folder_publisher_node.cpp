@@ -49,7 +49,7 @@ int main(int argc, char** argv)
   nh.getParam("path", path);
 
   while (ros::ok()) {
-    for (const auto& entry: std::filesystem::directory_iterator(path)) {
+    for (const auto& entry : std::filesystem::directory_iterator(path)) {
       try {
         const std::string filename = entry.path();
         cv_bridge::CvImage cv_image;
