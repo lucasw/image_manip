@@ -1,0 +1,97 @@
+name: Ubuntu 22.04 Noetic
+
+# on: [push]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    env:
+      ROS_PACKAGE_PATH: /usr/share
+
+    steps:
+
+      - name: get image_manip
+        uses: actions/checkout@v4
+        with:
+          path: catkin_ws/src/image_manip
+
+      - name: install python
+        run: |
+          sudo apt install -yqq python-is-python3 python3-catkin python3-catkin-pkg
+
+      - name: setup environment variables
+        run: |
+          echo "DEST=$HOME/other/install" >> $GITHUB_ENV
+          echo PYTHON_MAJOR_VERSION=`python --version | awk  '{print $2}' | cut -d'.' -f1` >> $GITHUB_ENV
+          echo PYTHON_MINOR_VERSION=`python --version | awk  '{print $2}' | cut -d'.' -f2` >> $GITHUB_ENV
+
+      - name: setup environment variables 2
+        run: |
+          echo "PATH=$PATH:$DEST/bin" >> $GITHUB_ENV
+          echo "PYTHONPATH=$DEST/lib/python$PYTHON_MAJOR_VERSION.$PYTHON_MINOR_VERSION/site-packages/" >> $GITHUB_ENV
+      - name: check environment variables
+        run: |
+          echo "dest $DEST"
+          echo "path $PATH"
+          echo "pythonpath $PYTHONPATH"
+
+      - name: git clone pycommon
+        uses: actions/checkout@v4
+        with:
+          repository: osrf/osrf_pycommon
+          path: other/src/osrf_pycommon
+
+      - name: pycommon
+        run: |
+          cd other/src
+          cd osrf_pycommon
+          python3 setup.py install --prefix=$DEST --record install_manifest.txt --single-version-externally-managed
+
+      - name: git clone catkin tools
+        uses: actions/checkout@v4
+        with:
+          repository: lucasw/catkin_tools
+          path: other/src/catkin_tools
+          ref: sanitize_cmake_prefix_path
+
+      - name: catkin tools
+        run: |
+          cd other/src
+          cd catkin_tools
+          python3 setup.py install --prefix=$DEST --record install_manifest.txt --single-version-externally-managed
+
+      - name: check catkin
+        run: |
+          which catkin
+          catkin --version
+
+      - name: Update & upgrade
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get upgrade -qq
+          sudo apt-get install dpkg
+
+      - name: Install ROS basic packages
+        run: |
+            sudo apt-get install -yqq ros-*
+
+      - name: Install dependencies
+        run: |
+            pip install eclipse-zenoh
+
+      - name: build tutorials
+        run: |
+          cd catkin_ws
+          catkin config --install
+          catkin build --no-status
+
+      - name: lint
+        run: |
+          cd catkin_ws
+          source install/setup.bash
+          catkin build image_manip --no-deps --catkin-make-args roslint
